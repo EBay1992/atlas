@@ -53,26 +53,42 @@ const healthRoutes: FastifyPluginAsync = async (app) => {
 
       try {
         await pingPrisma(app.deps.prisma);
-        checks.postgres = "ok";
+        checks["postgres"] = "ok";
       } catch (err) {
         ok = false;
-        checks.postgres = err instanceof Error ? err.message : "error";
+        checks["postgres"] = err instanceof Error ? err.message : "error";
       }
 
       try {
         await app.deps.jobQueue.ping();
-        checks.redis = "ok";
+        checks["redis"] = "ok";
       } catch (err) {
         ok = false;
-        checks.redis = err instanceof Error ? err.message : "error";
+        checks["redis"] = err instanceof Error ? err.message : "error";
       }
 
       try {
         await app.deps.objectStore.ping();
-        checks.minio = "ok";
+        checks["minio"] = "ok";
       } catch (err) {
         ok = false;
-        checks.minio = err instanceof Error ? err.message : "error";
+        checks["minio"] = err instanceof Error ? err.message : "error";
+      }
+
+      try {
+        await app.deps.vectorStore.ping();
+        checks["qdrant"] = "ok";
+      } catch (err) {
+        ok = false;
+        checks["qdrant"] = err instanceof Error ? err.message : "error";
+      }
+
+      try {
+        await app.deps.embeddings.ping();
+        checks["ollama"] = "ok";
+      } catch (err) {
+        ok = false;
+        checks["ollama"] = err instanceof Error ? err.message : "error";
       }
 
       return reply.code(ok ? 200 : 503).send({

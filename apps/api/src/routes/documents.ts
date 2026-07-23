@@ -238,12 +238,15 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
       );
 
       try {
+        const traceparentHeader = request.headers["traceparent"];
         const { queueJobId } = await app.deps.jobQueue.enqueueIngestion({
           jobId: job.id,
           documentId: document.id,
           tenantId: auth.tenantId,
           storageKey,
-          traceparent: request.headers.traceparent as string | undefined,
+          ...(typeof traceparentHeader === "string"
+            ? { traceparent: traceparentHeader }
+            : {}),
         });
         await app.deps.jobs.updateStatus(auth.tenantId, job.id, "queued", "queued", {
           queueJobId,

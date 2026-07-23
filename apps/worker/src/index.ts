@@ -3,9 +3,14 @@ import { loadEnv } from "@atlas/config";
 import {
   createPrismaClient,
   createRedisConnection,
+  MimeTextExtractor,
+  OllamaEmbeddingProvider,
+  PrismaChunkRepository,
   PrismaDocumentRepository,
   PrismaJobRepository,
+  QdrantVectorStore,
   S3ObjectStore,
+  UuidGenerator,
 } from "@atlas/infra";
 import {
   createLogger,
@@ -39,10 +44,22 @@ async function main() {
   });
   await objectStore.ensureBucket();
 
+  const embeddings = new OllamaEmbeddingProvider({
+    baseUrl: env.OLLAMA_BASE_URL,
+    model: env.OLLAMA_EMBEDDING_MODEL,
+    dimensions: env.EMBEDDING_DIMENSIONS,
+  });
+  const vectorStore = new QdrantVectorStore({
+    url: env.QDRANT_URL,
+    collection: env.QDRANT_COLLECTION,
+    dimensions: env.EMBEDDING_DIMENSIONS,
+  });
+  await vectorStore.ensureCollection();
+
   const connection = createRedisConnection({
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD || undefined,
+    ...(env.REDIS_PASSWORD ? { password: env.REDIS_PASSWORD } : {}),
   });
 
   const { worker, dlq } = createIngestionWorker({
@@ -50,8 +67,15 @@ async function main() {
     metrics,
     documents: new PrismaDocumentRepository(prisma),
     jobs: new PrismaJobRepository(prisma),
+    chunks: new PrismaChunkRepository(prisma),
     objectStore,
-    fakeProcessingMs: env.FAKE_PROCESSING_MS,
+    textExtractor: new MimeTextExtractor(),
+    embeddings,
+    vectorStore,
+    chunkSize: env.CHUNK_SIZE,
+    chunkOverlap: env.CHUNK_OVERLAP,
+    embeddingBatchSize: env.EMBEDDING_BATCH_SIZE,
+    ids: new UuidGenerator(),
     connection,
     queueName: env.INGESTION_QUEUE_NAME,
     dlqName: env.INGESTION_DLQ_NAME,
@@ -62,6 +86,8 @@ async function main() {
     {
       queue: env.INGESTION_QUEUE_NAME,
       concurrency: env.WORKER_CONCURRENCY,
+      embeddingModel: env.OLLAMA_EMBEDDING_MODEL,
+      qdrant: env.QDRANT_URL,
     },
     "Atlas worker started",
   );

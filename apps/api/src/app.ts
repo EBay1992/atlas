@@ -10,8 +10,9 @@ import healthRoutes from "./routes/health.js";
 import authRoutes from "./routes/auth.js";
 import documentsRoutes from "./routes/documents.js";
 import jobsRoutes from "./routes/jobs.js";
+import searchRoutes from "./routes/search.js";
 
-export async function buildApp(env: Env, deps: AppDeps) {
+export async function buildApp(_env: Env, deps: AppDeps) {
   const app = Fastify({
     logger: false,
     requestIdHeader: "x-request-id",
@@ -54,8 +55,8 @@ export async function buildApp(env: Env, deps: AppDeps) {
       info: {
         title: "Atlas API",
         description:
-          "Enterprise knowledge platform — Week 1 ingestion foundations",
-        version: "0.1.0",
+          "Enterprise knowledge platform — ingestion, extraction, and semantic search",
+        version: "0.2.0",
       },
       components: {
         securitySchemes: {
@@ -77,6 +78,7 @@ export async function buildApp(env: Env, deps: AppDeps) {
   await app.register(authRoutes);
   await app.register(documentsRoutes);
   await app.register(jobsRoutes);
+  await app.register(searchRoutes);
 
   app.setErrorHandler((error, request, reply) => {
     const err = error as { statusCode?: number; message: string };
