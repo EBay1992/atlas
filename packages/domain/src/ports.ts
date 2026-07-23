@@ -1,5 +1,6 @@
 import type { Readable } from "node:stream";
 import type {
+  Chunk,
   Document,
   DocumentStatus,
   IngestionJob,
@@ -125,4 +126,84 @@ export interface TokenService {
     email: string;
     role: string;
   }>;
+}
+
+export interface TextExtractInput {
+  contentType: string;
+  filename?: string;
+  body: Buffer;
+}
+
+export interface TextExtractResult {
+  text: string;
+  pageCount?: number;
+}
+
+export interface TextExtractor {
+  extract(input: TextExtractInput): Promise<TextExtractResult>;
+}
+
+export interface EmbeddingProvider {
+  readonly model: string;
+  readonly dimensions: number;
+  embed(texts: string[]): Promise<number[][]>;
+  ping(): Promise<void>;
+}
+
+export interface VectorPoint {
+  id: string;
+  vector: number[];
+  payload: {
+    tenantId: string;
+    documentId: string;
+    chunkId: string;
+    ordinal: number;
+  };
+}
+
+export interface VectorSearchHit {
+  id: string;
+  score: number;
+  payload: {
+    tenantId: string;
+    documentId: string;
+    chunkId: string;
+    ordinal: number;
+  };
+}
+
+export interface VectorSearchInput {
+  vector: number[];
+  tenantId: string;
+  limit: number;
+  documentId?: string;
+}
+
+export interface VectorStore {
+  ensureCollection(): Promise<void>;
+  upsert(points: VectorPoint[]): Promise<void>;
+  search(input: VectorSearchInput): Promise<VectorSearchHit[]>;
+  deleteByDocumentId(tenantId: string, documentId: string): Promise<void>;
+  ping(): Promise<void>;
+}
+
+export interface CreateChunkInput {
+  id: string;
+  tenantId: string;
+  documentId: string;
+  ordinal: number;
+  text: string;
+  tokenEstimate: number;
+  contentHash: string;
+}
+
+export interface ChunkRepository {
+  replaceForDocument(
+    tenantId: string,
+    documentId: string,
+    chunks: CreateChunkInput[],
+  ): Promise<Chunk[]>;
+  deleteByDocumentId(tenantId: string, documentId: string): Promise<void>;
+  findByIds(tenantId: string, ids: string[]): Promise<Chunk[]>;
+  findByDocumentId(tenantId: string, documentId: string): Promise<Chunk[]>;
 }

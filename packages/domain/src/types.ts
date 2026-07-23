@@ -65,3 +65,15 @@ export interface AuthClaims {
   email: string;
   role: UserRole;
 }
+
+export interface Chunk {
+  id: string;
+  tenantId: string;
+  documentId: string;
+  ordinal: number;
+  text: string;
+  tokenEstimate: number;
+  contentHash: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
