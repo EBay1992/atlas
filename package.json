@@ -1,0 +1,21 @@
+{
+  "name": "atlas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atlas — miniature enterprise knowledge platform",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev:api": "pnpm --filter @atlas/api dev",
+    "dev:worker": "pnpm --filter @atlas/worker dev",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @atlas/infra db:generate",
+    "db:migrate": "pnpm --filter @atlas/infra db:migrate",
+    "db:seed": "pnpm --filter @atlas/infra db:seed",
+    "typecheck": "pnpm -r run typecheck"
+  }
+}
