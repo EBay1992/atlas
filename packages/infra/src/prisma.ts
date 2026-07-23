@@ -1,12 +1,12 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "./generated/prisma/client.js";
 
 export function createPrismaClient(databaseUrl?: string): PrismaClient {
   return new PrismaClient({
-    datasources: databaseUrl
-      ? { db: { url: databaseUrl } }
-      : undefined,
+    ...(databaseUrl
+      ? { datasources: { db: { url: databaseUrl } } }
+      : {}),
     log:
-      process.env.NODE_ENV === "development"
+      process.env["NODE_ENV"] === "development"
         ? ["warn", "error"]
         : ["error"],
   });

@@ -39,6 +39,10 @@ export class JwtTokenService implements TokenService {
     email: string;
     role: string;
   }): Promise<string> {
+    const options: jwt.SignOptions = {
+      subject: claims.sub,
+      expiresIn: this.expiresIn as NonNullable<jwt.SignOptions["expiresIn"]>,
+    };
     return jwt.sign(
       {
         tenantId: claims.tenantId,
@@ -46,10 +50,7 @@ export class JwtTokenService implements TokenService {
         role: claims.role,
       },
       this.secret,
-      {
-        subject: claims.sub,
-        expiresIn: this.expiresIn as jwt.SignOptions["expiresIn"],
-      },
+      options,
     );
   }
 
@@ -60,19 +61,22 @@ export class JwtTokenService implements TokenService {
     role: string;
   }> {
     const payload = jwt.verify(token, this.secret) as jwt.JwtPayload;
+    const tenantId = payload["tenantId"];
+    const email = payload["email"];
+    const role = payload["role"];
     if (
       typeof payload.sub !== "string" ||
-      typeof payload.tenantId !== "string" ||
-      typeof payload.email !== "string" ||
-      typeof payload.role !== "string"
+      typeof tenantId !== "string" ||
+      typeof email !== "string" ||
+      typeof role !== "string"
     ) {
       throw new Error("Invalid token claims");
     }
     return {
       sub: payload.sub,
-      tenantId: payload.tenantId,
-      email: payload.email,
-      role: payload.role,
+      tenantId,
+      email,
+      role,
     };
   }
 }

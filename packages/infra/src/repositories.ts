@@ -1,6 +1,9 @@
 import type {
+  Chunk,
+  CreateChunkInput,
   CreateDocumentInput,
   CreateJobInput,
+  ChunkRepository,
   Document,
   DocumentRepository,
   DocumentStatus,
@@ -11,7 +14,7 @@ import type {
   UserRepository,
   UserRole,
 } from "@atlas/domain";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "./generated/prisma/client.js";
 
 function mapDocument(row: {
   id: string;
@@ -54,6 +57,20 @@ function mapUser(row: {
   createdAt: Date;
   updatedAt: Date;
 }): User {
+  return { ...row };
+}
+
+function mapChunk(row: {
+  id: string;
+  tenantId: string;
+  documentId: string;
+  ordinal: number;
+  text: string;
+  tokenEstimate: number;
+  contentHash: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): Chunk {
   return { ...row };
 }
 
@@ -188,5 +205,62 @@ export class PrismaUserRepository implements UserRepository {
   async findById(id: string): Promise<User | null> {
     const row = await this.prisma.user.findUnique({ where: { id } });
     return row ? mapUser(row) : null;
+  }
+}
+
+export class PrismaChunkRepository implements ChunkRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async replaceForDocument(
+    tenantId: string,
+    documentId: string,
+    chunks: CreateChunkInput[],
+  ): Promise<Chunk[]> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.chunk.deleteMany({ where: { tenantId, documentId } });
+      if (chunks.length === 0) return [];
+      await tx.chunk.createMany({
+        data: chunks.map((c) => ({
+          id: c.id,
+          tenantId: c.tenantId,
+          documentId: c.documentId,
+          ordinal: c.ordinal,
+          text: c.text,
+          tokenEstimate: c.tokenEstimate,
+          contentHash: c.contentHash,
+        })),
+      });
+      const rows = await tx.chunk.findMany({
+        where: { tenantId, documentId },
+        orderBy: { ordinal: "asc" },
+      });
+      return rows.map(mapChunk);
+    });
+  }
+
+  async deleteByDocumentId(
+    tenantId: string,
+    documentId: string,
+  ): Promise<void> {
+    await this.prisma.chunk.deleteMany({ where: { tenantId, documentId } });
+  }
+
+  async findByIds(tenantId: string, ids: string[]): Promise<Chunk[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.prisma.chunk.findMany({
+      where: { tenantId, id: { in: ids } },
+    });
+    return rows.map(mapChunk);
+  }
+
+  async findByDocumentId(
+    tenantId: string,
+    documentId: string,
+  ): Promise<Chunk[]> {
+    const rows = await this.prisma.chunk.findMany({
+      where: { tenantId, documentId },
+      orderBy: { ordinal: "asc" },
+    });
+    return rows.map(mapChunk);
   }
 }

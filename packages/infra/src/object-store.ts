@@ -84,7 +84,9 @@ export class S3ObjectStore implements ObjectStore {
     );
     return {
       contentLength: result.ContentLength ?? 0,
-      contentType: result.ContentType,
+      ...(result.ContentType !== undefined
+        ? { contentType: result.ContentType }
+        : {}),
     };
   }
 

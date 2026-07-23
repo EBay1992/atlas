@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -37,6 +38,7 @@ model Tenant {
   users     User[]
   documents Document[]
   jobs      IngestionJob[]
+  chunks    Chunk[]
 
   @@map("tenants")
 }
@@ -70,6 +72,7 @@ model Document {
 
   tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   jobs   IngestionJob[]
+  chunks Chunk[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -98,4 +101,24 @@ model IngestionJob {
   @@index([documentId])
   @@index([tenantId, status])
   @@map("ingestion_jobs")
+}
+
+model Chunk {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  ordinal       Int
+  text          String   @db.Text
+  tokenEstimate Int      @map("token_estimate")
+  contentHash   String   @map("content_hash")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, ordinal])
+  @@index([tenantId])
+  @@index([tenantId, documentId])
+  @@map("chunks")
 }
