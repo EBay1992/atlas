@@ -1,0 +1,18 @@
+# Garbage Collection and the Virtual Machine Runtime
+
+A managed language runtime lives or dies by how it moves objects between heap
+generations. The just-in-time compiler profiles hot methods, inlines small
+callees, and deoptimizes when class hierarchy assumptions break. Developers
+tune heap sizes, watch pause times, and debate whether a concurrent collector
+beats a throughput-oriented one for their latency budget.
+
+Bytecode verification, class loaders, and a rich standard library make the
+platform portable across operating systems. Build tools package dependencies
+into jars; frameworks inject services at startup; profilers attach to running
+processes to find allocation churn. Teams routinely review checked exceptions,
+the memory model, and why string interning exists when tuning production services.
+
+This text is exclusively about the programming language and its virtual machine
+ecosystem—compilers, packages, and server frameworks. It is not about the
+Indonesian island, roasted coffee beans, or travel itineraries. When we say
+Java, we mean source code that compiles to bytecode and runs on a VM.

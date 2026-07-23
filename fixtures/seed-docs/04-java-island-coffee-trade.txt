@@ -1,0 +1,17 @@
+# Monsoon Trade Routes Across the Island of Java
+
+Merchants once timed their voyages to the monsoon winds that push ships between
+Sumatra, the island of Java, and ports farther east. Inland, volcanic soil feeds
+terraced rice paddies; coastal towns roast beans grown on highland slopes and
+pack them for export. Travelers describe batik markets in Yogyakarta, temple
+complexes near Borobudur, and ferries that cross narrow straits toward Bali.
+
+Geographers map the island’s densely populated corridors, active volcanoes, and
+the cultural blend of Javanese courts with Dutch colonial infrastructure that
+later became modern Indonesia’s commercial spine. Coffee traders still argue
+about wet versus dry processing, elevation, and whether a cup tastes of cocoa
+husk or ripe cherry.
+
+Nothing here is about compilers, bytecode, heap dumps, or software frameworks.
+When this document says Java, it means the Indonesian island, its people, its
+agriculture, and the coffee trade that carried its name into cafés worldwide.

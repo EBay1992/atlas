@@ -1,0 +1,18 @@
+# Collateral, Credit Lines, and the Commercial Lender
+
+A commercial lending desk underwrites risk by reading cash-flow statements,
+personal guarantees, and lien priority on inventory. Relationship managers
+renew revolving facilities, price spreads above a reference rate, and escalate
+covenant breaches to credit committees. Regulators examine capital ratios,
+liquidity coverage, and whether deposit insurance reassures retail customers
+who park payroll in checking accounts.
+
+Wire rooms settle large transfers; treasury desks manage duration on the bond
+book; branch networks still handle cash deposits even as mobile apps take over
+routine payments. When a borrower defaults, workout teams negotiate forbearance,
+seize collateral, or sell nonperforming loans to specialist funds.
+
+This document describes a financial institution that takes deposits and extends
+credit. It is not about river edges, fishing spots, or muddy shores. When we
+say bank, we mean the lender, the vault, and the balance sheet—not the land
+beside a stream.

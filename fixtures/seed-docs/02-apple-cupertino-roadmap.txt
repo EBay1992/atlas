@@ -1,0 +1,18 @@
+# Cupertino Product Cycles and the Hardware Roadmap
+
+The Cupertino campus treats every autumn keynote as a tightly orchestrated product
+release. Industrial designers obsess over aluminum unibody tolerances, while
+software teams ship OS updates that bind phones, tablets, and laptops into one
+continuity story. Analysts watch the App Store cut, services revenue, and how
+many developers adopt the newest chip architecture.
+
+Supply-chain planners negotiate wafer allocations months ahead of launch. Retail
+stores become showrooms for the brand’s privacy messaging, repair programs, and
+accessory ecosystem. Competitors measure themselves against the company’s ability
+to turn a single silicon family into phones, headphones, and desktop machines
+without fracturing the developer story.
+
+This document is about the technology company headquartered in Cupertino—its
+devices, platforms, and capital markets narrative. It is not about orchards,
+cider presses, pie recipes, or fruit harvests. When we say Apple here, we mean
+the public company and consumer electronics brand, not something you bite into.

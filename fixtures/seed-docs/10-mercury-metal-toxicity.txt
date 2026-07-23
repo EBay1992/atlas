@@ -1,0 +1,17 @@
+# Elemental Mercury Vapor and Laboratory Toxicity
+
+Liquid mercury is a silvery metal that stays fluid at room temperature and
+releases vapor that damages the nervous system. Industrial hygienists monitor
+air concentrations near broken fluorescent lamps, chlor-alkali plants, and old
+thermometer workshops. Spill kits use sulfur or commercial amalgamation powders;
+vacuum cleaners are forbidden because they aerosolize droplets.
+
+Dentists phased down amalgams in many countries; artisanal gold miners still
+use the metal to bind ore, then burn off the mercury and inhale fumes. Blood
+and urine biomarkers track exposure; chelation therapy is reserved for severe
+poisoning cases under clinical supervision. Regulations classify waste as
+hazardous and require sealed containers for transport.
+
+This text is about the chemical element Hg—its phase behavior, toxicity, and
+industrial controls. It is not about planetary orbits, spacecraft flybys, or
+astronomy. When we say Mercury here, we mean the toxic metal, not the planet.

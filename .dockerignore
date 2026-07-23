@@ -9,3 +9,5 @@ tmp
 .turbo
 .idea
 .vscode
+packages/infra/src/generated
+fixtures

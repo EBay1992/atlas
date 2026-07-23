@@ -52,7 +52,15 @@ export const envSchema = z.object({
   INGESTION_QUEUE_NAME: z.string().default("ingestion"),
   INGESTION_DLQ_NAME: z.string().default("ingestion-dlq"),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(2),
-  FAKE_PROCESSING_MS: z.coerce.number().int().nonnegative().default(2000),
+
+  OLLAMA_BASE_URL: z.string().url().default("http://localhost:11434"),
+  OLLAMA_EMBEDDING_MODEL: z.string().default("qwen3-embedding:latest"),
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(4096),
+  QDRANT_URL: z.string().url().default("http://localhost:6333"),
+  QDRANT_COLLECTION: z.string().default("atlas_chunks"),
+  CHUNK_SIZE: z.coerce.number().int().positive().default(800),
+  CHUNK_OVERLAP: z.coerce.number().int().nonnegative().default(120),
+  EMBEDDING_BATCH_SIZE: z.coerce.number().int().positive().default(16),
 
   OTEL_ENABLED: boolFromString.default(false),
   OTEL_SERVICE_NAME: z.string().default("atlas"),
@@ -72,7 +80,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .join("\n");
     throw new Error(`Invalid environment configuration:\n${details}`);
   }
-  cached = parsed.data;
+
+  const env = parsed.data;
+  if (
+    env.NODE_ENV === "production" &&
+    (env.JWT_SECRET.includes("change-me") || env.JWT_SECRET.length < 32)
+  ) {
+    throw new Error(
+      "Refusing to start: set a strong JWT_SECRET (at least 32 random characters) in production",
+    );
+  }
+
+  cached = env;
   return cached;
 }
 

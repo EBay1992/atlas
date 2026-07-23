@@ -42,4 +42,11 @@ done
 
 curl -sf "$API_BASE/v1/jobs/$JOB_ID" -H "authorization: Bearer $TOKEN"
 echo
+
+echo "Searching..."
+curl -sf -X POST "$API_BASE/v1/search" \
+  -H "authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"query":"atlas happy path","limit":5}'
+echo
 rm -f "$TMP"

@@ -13,3 +13,4 @@ prisma/*.db
 .vscode/
 tmp/
 uploads/
+packages/infra/src/generated/

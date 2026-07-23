@@ -1,0 +1,18 @@
+# Mercury’s Solar Year and the Innermost Orbit
+
+Astronomers describe Mercury as the scorched innermost planet, locked in a
+3:2 spin-orbit resonance that makes a solar day longer than its year. Daytime
+temperatures soar above 400°C; nights plunge toward −170°C because the world
+has almost no atmosphere to hold heat. Radar mapping revealed a battered
+surface of basins and scarps, while spacecraft measured a large iron core that
+helps generate a weak magnetic field.
+
+Observers still chase the planet in twilight, low on the horizon, never far
+from the Sun’s glare. Transit events—when the tiny disk crosses the solar face—
+remain rare public spectacles. Models of solar system formation ask why such
+a dense body sits so close to the star, and whether early giant impacts stripped
+its mantle.
+
+This document is planetary science. It is not about thermometers, liquid metal
+in glass tubes, toxic vapors, or dental amalgams. When we say Mercury, we mean
+the planet nearest the Sun—not the chemical element.

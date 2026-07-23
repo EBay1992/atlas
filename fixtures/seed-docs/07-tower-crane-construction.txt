@@ -1,0 +1,18 @@
+# Tower Crane Rigging on a High-Rise Jobsite
+
+On a downtown pour day the tower crane climbs with the building, its mast
+bolted to climbing frames as floors rise. The operator in the cab reads radio
+calls from the tagline crew, swings a load of rebar over the deck, and waits
+for the signal before lowering the hook. Riggers inspect wire rope, anti-two-
+block devices, and outrigger pads when a mobile unit works the perimeter.
+
+Project managers schedule concrete buckets between steel deliveries; wind
+limits can idle the boom for hours. Manufacturers publish load charts that
+trade radius for capacity: farther out means fewer tons. Failures are rare
+but catastrophic, so daily checklists cover slew brakes, limit switches, and
+counterweight pins.
+
+This document is about heavy construction machinery that lifts steel and
+concrete. It is not about migratory birds, nesting grounds, or wildlife
+photography. When we say crane, we mean the engineered lifting machine on a
+jobsite, not an animal with long legs.
