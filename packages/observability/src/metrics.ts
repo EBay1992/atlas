@@ -6,7 +6,10 @@ import {
   collectDefaultMetrics,
 } from "prom-client";
 
-export function createMetricsRegistry(serviceName: string): {
+export function createMetricsRegistry(
+  serviceName: string,
+  options?: { environment?: string },
+): {
   registry: Registry;
   httpRequestDuration: Histogram<string>;
   uploadBytes: Counter<string>;
@@ -17,7 +20,12 @@ export function createMetricsRegistry(serviceName: string): {
   queueDepth: Gauge<string>;
 } {
   const registry = new Registry();
-  registry.setDefaultLabels({ service: serviceName });
+  registry.setDefaultLabels({
+    service: serviceName,
+    ...(options?.environment
+      ? { environment: options.environment }
+      : {}),
+  });
   collectDefaultMetrics({ register: registry });
 
   const httpRequestDuration = new Histogram({
