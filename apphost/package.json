@@ -1,0 +1,15 @@
+{
+  "name": "@atlas/apphost",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Aspire TypeScript AppHost — Atlas local control plane (orchestration only)",
+  "scripts": {
+    "start": "aspire run",
+    "restore": "aspire restore",
+    "run": "aspire run"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
