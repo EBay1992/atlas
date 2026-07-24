@@ -12,6 +12,10 @@ describe("job state machine", () => {
     expect(canJobTransition("processing", "completed")).toBe(true);
   });
 
+  it("allows failed → queued for manual retry", () => {
+    expect(canJobTransition("failed", "queued")).toBe(true);
+  });
+
   it("rejects completed → processing", () => {
     expect(canJobTransition("completed", "processing")).toBe(false);
     expect(() => assertJobTransition("completed", "processing")).toThrow(

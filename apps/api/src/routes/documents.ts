@@ -1,6 +1,11 @@
 import { createHash, type Hash } from "node:crypto";
 import { Transform, type TransformCallback } from "node:stream";
 import type { FastifyPluginAsync } from "fastify";
+import {
+  atlasSpanAttrs,
+  injectTraceContext,
+  withSpan,
+} from "@atlas/observability";
 
 function serializeDocument(doc: {
   id: string;
@@ -122,6 +127,9 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const auth = request.auth!;
+      return withSpan(
+        "documents.upload",
+        async () => {
       const idempotencyKeyHeader = request.headers["idempotency-key"];
       const idempotencyKey =
         typeof idempotencyKeyHeader === "string" && idempotencyKeyHeader.length > 0
@@ -153,6 +161,13 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
 
       const documentId = app.deps.ids.generate();
       const jobId = app.deps.ids.generate();
+      // Business correlation equals documentId for the upload lifecycle.
+      request.correlationId = documentId;
+      request.log = request.log.child({
+        correlationId: documentId,
+        documentId,
+        userId: auth.sub,
+      });
       const storageKey = `${auth.tenantId}/${documentId}/${file.filename}`;
       const hasher = new HashingCounter();
       const uploadStream = file.file.pipe(hasher);
@@ -160,11 +175,23 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
       // Dual-write order: object store → DB metadata → queue.
       // Orphaned objects possible if DB fails after MinIO write (compensating delete).
       try {
-        await app.deps.objectStore.putObject({
-          key: storageKey,
-          body: uploadStream,
-          contentType: file.mimetype || "application/octet-stream",
-        });
+        await withSpan(
+          "objectstore.put",
+          async () => {
+            await app.deps.objectStore.putObject({
+              key: storageKey,
+              body: uploadStream,
+              contentType: file.mimetype || "application/octet-stream",
+            });
+          },
+          atlasSpanAttrs({
+            tenantId: auth.tenantId,
+            documentId,
+            correlationId: documentId,
+            userId: auth.sub,
+            storageKey,
+          }),
+        );
       } catch (err) {
         request.log.error({ err }, "Failed to upload object to MinIO");
         return reply.code(502).send({
@@ -238,19 +265,50 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
       );
 
       try {
-        const traceparentHeader = request.headers["traceparent"];
-        const { queueJobId } = await app.deps.jobQueue.enqueueIngestion({
-          jobId: job.id,
-          documentId: document.id,
-          tenantId: auth.tenantId,
-          storageKey,
-          ...(typeof traceparentHeader === "string"
-            ? { traceparent: traceparentHeader }
-            : {}),
-        });
-        await app.deps.jobs.updateStatus(auth.tenantId, job.id, "queued", "queued", {
-          queueJobId,
-        });
+        await withSpan(
+          "jobs.enqueue",
+          async () => {
+            const carrier = injectTraceContext({});
+            const { queueJobId } = await app.deps.jobQueue.enqueueIngestion({
+              jobId: job.id,
+              documentId: document.id,
+              tenantId: auth.tenantId,
+              storageKey,
+              correlationId: document.id,
+              userId: auth.sub,
+              retryKind: "automatic",
+              ...(carrier["traceparent"]
+                ? { traceparent: carrier["traceparent"] }
+                : {}),
+              ...(carrier["tracestate"]
+                ? { tracestate: carrier["tracestate"] }
+                : {}),
+            });
+            await app.deps.jobs.updateStatus(
+              auth.tenantId,
+              job.id,
+              "queued",
+              "queued",
+              {
+                queueJobId,
+                // Persist upload carrier so a later manual retry can span-link.
+                ...(carrier["traceparent"]
+                  ? { linkedTraceparent: carrier["traceparent"] }
+                  : {}),
+                ...(carrier["tracestate"]
+                  ? { linkedTracestate: carrier["tracestate"] }
+                  : {}),
+              },
+            );
+          },
+          atlasSpanAttrs({
+            tenantId: auth.tenantId,
+            documentId: document.id,
+            jobId: job.id,
+            correlationId: document.id,
+            userId: auth.sub,
+          }),
+        );
       } catch (err) {
         request.log.error({ err }, "Failed to enqueue ingestion job");
         await app.deps.jobs.updateStatus(auth.tenantId, job.id, "queued", "failed", {
@@ -280,7 +338,9 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
         {
           documentId: document.id,
           jobId: job.id,
+          correlationId: document.id,
           tenantId: auth.tenantId,
+          userId: auth.sub,
           byteSize,
         },
         "Document uploaded and enqueued",
@@ -292,6 +352,12 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
         status: "queued",
         reused: false,
       });
+        },
+        atlasSpanAttrs({
+          tenantId: auth.tenantId,
+          userId: auth.sub,
+        }),
+      );
     },
   );
 

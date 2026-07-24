@@ -18,6 +18,8 @@
     "db:migrate": "pnpm --filter @atlas/infra db:migrate",
     "db:seed": "pnpm --filter @atlas/infra db:seed",
     "seed:docs": "bash scripts/seed-polysemy-docs.sh",
+    "aspire:restore": "cd apphost && aspire restore",
+    "aspire:run": "cd apphost && aspire run",
     "typecheck": "pnpm -r run typecheck"
   }
 }

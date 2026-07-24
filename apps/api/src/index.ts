@@ -8,8 +8,15 @@ async function main() {
   const env = loadEnv();
   await startTracing({
     enabled: env.OTEL_ENABLED,
-    serviceName: `${env.OTEL_SERVICE_NAME}-api`,
+    // Aspire AppHost sets OTEL_SERVICE_NAME to the full resource name (atlas-api).
+    serviceName: env.OTEL_SERVICE_NAME.endsWith("-api")
+      ? env.OTEL_SERVICE_NAME
+      : `${env.OTEL_SERVICE_NAME}-api`,
+    environment: env.NODE_ENV,
     otlpEndpoint: env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    ...(env.OTEL_EXPORTER_OTLP_HEADERS
+      ? { otlpHeaders: env.OTEL_EXPORTER_OTLP_HEADERS }
+      : {}),
   });
 
   const deps = await buildDeps(env);
