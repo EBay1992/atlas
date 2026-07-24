@@ -15,7 +15,14 @@ import {
   assertJobTransition,
   chunkText,
 } from "@atlas/domain";
-import type { AtlasMetrics, Logger } from "@atlas/observability";
+import {
+  atlasSpanAttrs,
+  withExtractedContext,
+  withLinkedRootSpan,
+  withSpan,
+  type AtlasMetrics,
+  type Logger,
+} from "@atlas/observability";
 import type { ConnectionOptions } from "bullmq";
 import type { Readable } from "node:stream";
 
@@ -51,25 +58,40 @@ async function embedInBatches(
   embeddings: EmbeddingProvider,
   texts: string[],
   batchSize: number,
+  attrs: Record<string, string | number | boolean>,
 ): Promise<number[][]> {
   const vectors: number[][] = [];
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
-    const result = await embeddings.embed(batch);
+    const result = await withSpan(
+      "embed.batch",
+      async () => embeddings.embed(batch),
+      { ...attrs, "atlas.batch_size": batch.length },
+    );
     vectors.push(...result);
   }
   return vectors;
 }
 
-export async function processIngestionJob(
+async function processIngestionJobInner(
   job: Job<IngestionJobPayload>,
   deps: ProcessorDeps,
+  attrs: Record<string, string | number | boolean>,
 ): Promise<void> {
-  const { jobId, documentId, tenantId, storageKey } = job.data;
+  const {
+    jobId,
+    documentId,
+    tenantId,
+    storageKey,
+    correlationId = documentId,
+    userId,
+  } = job.data;
   const log = deps.logger.child({
     jobId,
     documentId,
     tenantId,
+    correlationId,
+    ...(userId ? { userId } : {}),
     bullJobId: job.id,
     attempt: job.attemptsMade + 1,
   });
@@ -107,10 +129,15 @@ export async function processIngestionJob(
       log.warn("Lost optimistic lock moving job to processing");
       return;
     }
-    const doc = await deps.documents.findById(tenantId, documentId);
-    if (doc?.status === "queued") {
+    const docQueued = await deps.documents.findById(tenantId, documentId);
+    if (docQueued?.status === "queued") {
       assertDocumentTransition("queued", "processing");
-      await deps.documents.updateStatus(tenantId, documentId, "queued", "processing");
+      await deps.documents.updateStatus(
+        tenantId,
+        documentId,
+        "queued",
+        "processing",
+      );
     }
   } else if (current.status === "processing") {
     await deps.jobs.updateStatus(tenantId, jobId, "processing", "processing", {
@@ -123,27 +150,42 @@ export async function processIngestionJob(
     throw new Error(`Document not found: ${documentId}`);
   }
 
-  const objectStream = await deps.objectStore.getObject(storageKey);
-  const body = await streamToBuffer(objectStream);
+  const body = await withSpan(
+    "objectstore.get",
+    async () => {
+      const objectStream = await deps.objectStore.getObject(storageKey);
+      return streamToBuffer(objectStream);
+    },
+    attrs,
+  );
   log.info({ byteSize: body.byteLength }, "Object downloaded from object store");
 
-  const extracted = await deps.textExtractor.extract({
-    contentType: document.contentType,
-    filename: document.originalFilename,
-    body,
-  });
+  const extracted = await withSpan(
+    "extract.text",
+    async () =>
+      deps.textExtractor.extract({
+        contentType: document.contentType,
+        filename: document.originalFilename,
+        body,
+      }),
+    attrs,
+  );
   log.info(
     { pageCount: extracted.pageCount, textLength: extracted.text.length },
     "Text extracted",
   );
 
-  const textChunks = chunkText(extracted.text, {
-    size: deps.chunkSize,
-    overlap: deps.chunkOverlap,
-  });
+  const textChunks = await withSpan(
+    "chunk",
+    async () =>
+      chunkText(extracted.text, {
+        size: deps.chunkSize,
+        overlap: deps.chunkOverlap,
+      }),
+    { ...attrs, "atlas.chunk_count_pending": true },
+  );
   log.info({ chunkCount: textChunks.length }, "Text chunked");
 
-  // Idempotent re-index: clear previous vectors + rows for this document
   await deps.vectorStore.deleteByDocumentId(tenantId, documentId);
   await deps.chunks.deleteByDocumentId(tenantId, documentId);
 
@@ -154,6 +196,7 @@ export async function processIngestionJob(
       deps.embeddings,
       textChunks.map((c) => c.text),
       deps.embeddingBatchSize,
+      attrs,
     );
 
     const createInputs = textChunks.map((c) => {
@@ -170,17 +213,23 @@ export async function processIngestionJob(
     });
 
     await deps.chunks.replaceForDocument(tenantId, documentId, createInputs);
-    await deps.vectorStore.upsert(
-      createInputs.map((c, i) => ({
-        id: c.id,
-        vector: vectors[i]!,
-        payload: {
-          tenantId,
-          documentId,
-          chunkId: c.id,
-          ordinal: c.ordinal,
-        },
-      })),
+    await withSpan(
+      "qdrant.upsert",
+      async () => {
+        await deps.vectorStore.upsert(
+          createInputs.map((c, i) => ({
+            id: c.id,
+            vector: vectors[i]!,
+            payload: {
+              tenantId,
+              documentId,
+              chunkId: c.id,
+              ordinal: c.ordinal,
+            },
+          })),
+        );
+      },
+      { ...attrs, "atlas.indexed_chunks": createInputs.length },
     );
     log.info({ indexed: createInputs.length }, "Chunks indexed in Qdrant");
   }
@@ -218,6 +267,59 @@ export async function processIngestionJob(
   log.info("Ingestion completed");
 }
 
+export async function processIngestionJob(
+  job: Job<IngestionJobPayload>,
+  deps: ProcessorDeps,
+): Promise<void> {
+  const {
+    jobId,
+    documentId,
+    tenantId,
+    storageKey,
+    correlationId = documentId,
+    userId,
+    retryKind,
+    traceparent,
+    tracestate,
+    linkedTraceparent,
+    linkedTracestate,
+  } = job.data;
+
+  const attrs = atlasSpanAttrs({
+    tenantId,
+    documentId,
+    jobId,
+    correlationId,
+    storageKey,
+    attempt: job.attemptsMade + 1,
+    ...(userId ? { userId } : {}),
+  });
+
+  const run = () => processIngestionJobInner(job, deps, attrs);
+
+  // Manual/DLQ retry: new Trace ID linked to the original upload.
+  if (retryKind === "manual") {
+    return withLinkedRootSpan(
+      "ingestion.process",
+      {
+        ...(linkedTraceparent ? { traceparent: linkedTraceparent } : {}),
+        ...(linkedTracestate ? { tracestate: linkedTracestate } : {}),
+      },
+      run,
+      attrs,
+    );
+  }
+
+  // Upload + automatic BullMQ retries: continue the same Trace ID.
+  return withExtractedContext(
+    {
+      ...(traceparent ? { traceparent } : {}),
+      ...(tracestate ? { tracestate } : {}),
+    },
+    () => withSpan("ingestion.process", run, attrs),
+  );
+}
+
 export function createIngestionWorker(deps: ProcessorDeps): {
   worker: Worker<IngestionJobPayload>;
   dlq: Queue;
@@ -235,48 +337,91 @@ export function createIngestionWorker(deps: ProcessorDeps): {
 
   worker.on("failed", async (job, err) => {
     if (!job) return;
-    const { jobId, documentId, tenantId } = job.data;
-    const log = deps.logger.child({ jobId, documentId, tenantId });
-    const maxAttempts = job.opts.attempts ?? 5;
-    const exhausted = job.attemptsMade >= maxAttempts;
 
-    log.error(
-      { err, attemptsMade: job.attemptsMade, exhausted },
-      "Ingestion job failed",
-    );
+    const {
+      jobId,
+      documentId,
+      tenantId,
+      correlationId = documentId,
+      userId,
+      traceparent,
+      tracestate,
+    } = job.data;
 
-    if (exhausted) {
-      const current = await deps.jobs.findById(tenantId, jobId);
-      if (current && (current.status === "processing" || current.status === "queued")) {
-        await deps.jobs.updateStatus(tenantId, jobId, current.status, "failed", {
-          lastError: err.message,
-          completedAt: new Date(),
-          attemptCount: job.attemptsMade,
+    await withExtractedContext(
+      {
+        ...(traceparent ? { traceparent } : {}),
+        ...(tracestate ? { tracestate } : {}),
+      },
+      async () => {
+        const log = deps.logger.child({
+          jobId,
+          documentId,
+          tenantId,
+          correlationId,
+          ...(userId ? { userId } : {}),
         });
-        const doc = await deps.documents.findById(tenantId, documentId);
-        if (
-          doc &&
-          (doc.status === "processing" ||
-            doc.status === "queued" ||
-            doc.status === "uploaded")
-        ) {
-          await deps.documents.updateStatus(
-            tenantId,
-            documentId,
-            doc.status,
-            "failed",
-          );
-        }
-      }
+        const maxAttempts = job.opts.attempts ?? 5;
+        const exhausted = job.attemptsMade >= maxAttempts;
 
-      await dlq.add("dead-letter", {
-        ...job.data,
-        failedReason: err.message,
-        attemptsMade: job.attemptsMade,
-      });
-      deps.metrics.jobsFailed.inc({ tenant_id: tenantId });
-      deps.metrics.workerProcessingDuration.observe({ outcome: "failed" }, 0);
-    }
+        log.error(
+          { err, attemptsMade: job.attemptsMade, exhausted },
+          "Ingestion job failed",
+        );
+
+        if (!exhausted) return;
+
+        const current = await deps.jobs.findById(tenantId, jobId);
+        if (
+          current &&
+          (current.status === "processing" || current.status === "queued")
+        ) {
+          await deps.jobs.updateStatus(
+            tenantId,
+            jobId,
+            current.status,
+            "failed",
+            {
+              lastError: err.message,
+              completedAt: new Date(),
+              attemptCount: job.attemptsMade,
+              // Keep original upload carrier for a later manual retry span-link.
+              ...(traceparent && !current.linkedTraceparent
+                ? { linkedTraceparent: traceparent }
+                : {}),
+              ...(tracestate && !current.linkedTracestate
+                ? { linkedTracestate: tracestate }
+                : {}),
+            },
+          );
+          const doc = await deps.documents.findById(tenantId, documentId);
+          if (
+            doc &&
+            (doc.status === "processing" ||
+              doc.status === "queued" ||
+              doc.status === "uploaded")
+          ) {
+            await deps.documents.updateStatus(
+              tenantId,
+              documentId,
+              doc.status,
+              "failed",
+            );
+          }
+        }
+
+        await dlq.add("dead-letter", {
+          ...job.data,
+          linkedTraceparent:
+            job.data.linkedTraceparent ?? job.data.traceparent,
+          linkedTracestate: job.data.linkedTracestate ?? job.data.tracestate,
+          failedReason: err.message,
+          attemptsMade: job.attemptsMade,
+        });
+        deps.metrics.jobsFailed.inc({ tenant_id: tenantId });
+        deps.metrics.workerProcessingDuration.observe({ outcome: "failed" }, 0);
+      },
+    );
   });
 
   return { worker, dlq };

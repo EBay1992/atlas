@@ -39,6 +39,8 @@ function mapJob(row: {
   status: JobStatus;
   attemptCount: number;
   lastError: string | null;
+  linkedTraceparent: string | null;
+  linkedTracestate: string | null;
   startedAt: Date | null;
   completedAt: Date | null;
   idempotencyKey: string | null;
@@ -168,6 +170,8 @@ export class PrismaJobRepository implements JobRepository {
       queueJobId?: string | null;
       attemptCount?: number;
       lastError?: string | null;
+      linkedTraceparent?: string | null;
+      linkedTracestate?: string | null;
       startedAt?: Date | null;
       completedAt?: Date | null;
     },
@@ -183,6 +187,12 @@ export class PrismaJobRepository implements JobRepository {
           ? { attemptCount: patch.attemptCount }
           : {}),
         ...(patch?.lastError !== undefined ? { lastError: patch.lastError } : {}),
+        ...(patch?.linkedTraceparent !== undefined
+          ? { linkedTraceparent: patch.linkedTraceparent }
+          : {}),
+        ...(patch?.linkedTracestate !== undefined
+          ? { linkedTracestate: patch.linkedTracestate }
+          : {}),
         ...(patch?.startedAt !== undefined ? { startedAt: patch.startedAt } : {}),
         ...(patch?.completedAt !== undefined
           ? { completedAt: patch.completedAt }

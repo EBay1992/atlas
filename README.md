@@ -31,13 +31,15 @@ citations.
 - **Local embeddings** via Ollama (`qwen3-embedding`)
 - **Vector search** via Qdrant with tenant filters
 - **Chunk citations** stored in Postgres for readable search hits
-- **OpenAPI**, health probes, and Prometheus metrics
+- **OpenAPI**, health probes, Prometheus metrics, and **OpenTelemetry** (Aspire Dashboard / any OTLP collector)
 - **Hexagonal ports** so storage / queue / embed / vector adapters can be swapped
+- **Aspire AppHost** as an optional local control plane (never imported by business code)
 
 ## Repository layout
 
 ```
 atlas/
+├── apphost/                 # Aspire TypeScript AppHost (control plane ONLY)
 ├── apps/
 │   ├── api/                 # Fastify REST + OpenAPI
 │   └── worker/              # BullMQ ingestion consumer
@@ -45,12 +47,15 @@ atlas/
 │   ├── domain/              # Entities, ports, chunker, text normalize
 │   ├── infra/               # Prisma, MinIO, BullMQ, Ollama, Qdrant
 │   ├── config/              # Zod-validated environment
-│   ├── observability/       # Pino + Prometheus (+ optional OTel)
+│   ├── observability/       # Pino + Prometheus + OpenTelemetry
 │   └── test-utils/
+├── docs/adr/                # Architecture Decision Records
 ├── fixtures/seed-docs/      # Polysemy evaluation documents
 ├── scripts/                 # happy-path + seed helpers
-└── docker-compose.yml       # Postgres, Redis, MinIO, Qdrant
+└── docker-compose.yml       # Postgres, Redis, MinIO, Qdrant (+ optional dashboard)
 ```
+
+**Aspire must never appear inside `packages/domain` or `packages/infra`.** See [ADR 0002](./docs/adr/0002-aspire-as-control-plane-not-framework.md).
 
 ## Prerequisites
 
@@ -68,6 +73,8 @@ ollama pull qwen3-embedding
 ```
 
 ## Quick start
+
+### Option A — Docker Compose + pnpm (fallback / CI)
 
 ```bash
 git clone https://github.com/EBay1992/atlas.git
@@ -92,6 +99,48 @@ pnpm dev:api
 # Terminal 2
 pnpm dev:worker
 ```
+
+### Option B — Aspire AppHost (recommended local control plane)
+
+1. Install the [Aspire CLI](https://aspire.dev/get-started/install-cli/).
+2. From the repo:
+
+```bash
+cp .env.example .env
+pnpm install
+pnpm --filter @atlas/config build \
+ && pnpm --filter @atlas/domain build \
+ && pnpm --filter @atlas/observability build \
+ && pnpm --filter @atlas/infra build
+
+pnpm aspire:restore   # generates apphost/.aspire/modules
+pnpm aspire:run       # resource graph + dashboard + api/worker
+```
+
+Details: [`apphost/README.md`](./apphost/README.md).
+
+### Observability (Compose path)
+
+```bash
+# Dashboard UI http://localhost:18888 — OTLP HTTP on :4318 (Aspire Dashboard ≥ 9.5)
+docker compose --profile observability up -d aspire-dashboard
+```
+
+In `.env`:
+
+```bash
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+Restart API/worker, upload a document, then open the Aspire Dashboard:
+
+- **Traces** — `documents.upload` → `jobs.enqueue` → `ingestion.process` (nested extract/chunk/embed/qdrant spans). Auto-retries stay on the **same Trace ID**.
+- **Structured logs** — Pino logs from `atlas-api` / `atlas-worker`, with `traceId`/`spanId` and `correlationId` (= `documentId`)
+- **Metrics** — OTLP metrics from both processes
+- **Manual retry** — `POST /v1/jobs/:id/retry` starts a **new** Trace ID **linked** to the original upload (span link); correlation stays the document id
+
+Trace vs correlation: use Trace ID for “this upload/retry timeline”; use `documentId` / `correlationId` for “everything that ever happened to this document.”
 
 Verify:
 
@@ -259,6 +308,10 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
+## Architecture decisions
+
+See [`docs/adr/`](./docs/adr/) for recorded trade-offs (Aspire vs Compose, OTel, Fastify, BullMQ, MinIO, hexagonal slices, async upload, …).
+
 ## Troubleshooting
 
 | Symptom | Likely fix |
@@ -270,6 +323,8 @@ pnpm db:seed
 | PDF chunks start mid-word | Re-upload after latest extract/normalize; old indexes keep prior text |
 | `JWT_SECRET` production error | Set a 32+ character random secret |
 | Port 3000 in use | Stop other API containers/processes, or change `API_PORT` |
+| `aspire restore` / missing `.aspire/modules` | Install [Aspire CLI](https://aspire.dev/get-started/install-cli/), then `pnpm aspire:restore` |
+| No traces in dashboard | Set `OTEL_ENABLED=true`, point `OTEL_EXPORTER_OTLP_ENDPOINT` at the dashboard, restart API/worker |
 
 ## Roadmap
 
