@@ -14,3 +14,7 @@ prisma/*.db
 tmp/
 uploads/
 packages/infra/src/generated/
+apphost/.aspire/
+apphost/.modules/
+
+.tmp-smoke/

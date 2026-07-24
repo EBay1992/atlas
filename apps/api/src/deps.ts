@@ -21,8 +21,11 @@ export async function buildDeps(env: Env): Promise<AppDeps> {
   const logger = createLogger({
     service: "atlas-api",
     level: env.LOG_LEVEL,
+    environment: env.NODE_ENV,
   });
-  const metrics = createMetricsRegistry("atlas-api");
+  const metrics = createMetricsRegistry("atlas-api", {
+    environment: env.NODE_ENV,
+  });
   const prisma = createPrismaClient(env.DATABASE_URL);
   const objectStore = new S3ObjectStore({
     endpoint: env.S3_ENDPOINT,

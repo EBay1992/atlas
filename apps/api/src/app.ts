@@ -39,6 +39,15 @@ export async function buildApp(_env: Env, deps: AppDeps) {
       },
       reply.elapsedTime / 1000,
     );
+    request.log.info(
+      {
+        method: request.method,
+        route,
+        statusCode: reply.statusCode,
+        durationMs: Math.round(reply.elapsedTime),
+      },
+      "request completed",
+    );
   });
 
   await app.register(requestContextPlugin);
