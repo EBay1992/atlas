@@ -71,6 +71,19 @@ services:
       timeout: 5s
       retries: 10
 
+  # Standalone Aspire Dashboard for Compose-path OTel (no Aspire CLI required).
+  # UI: http://localhost:18888  |  OTLP HTTP: localhost:4318  |  OTLP gRPC: localhost:4317
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.5
+    ports:
+      - "18888:18888"
+      - "4317:18889"
+      - "4318:18890"
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    profiles:
+      - observability
+
   api:
     build:
       context: .

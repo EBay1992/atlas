@@ -24,15 +24,25 @@ async function main() {
   const env = loadEnv();
   await startTracing({
     enabled: env.OTEL_ENABLED,
-    serviceName: `${env.OTEL_SERVICE_NAME}-worker`,
+    // Aspire AppHost sets OTEL_SERVICE_NAME to the full resource name (atlas-worker).
+    serviceName: env.OTEL_SERVICE_NAME.endsWith("-worker")
+      ? env.OTEL_SERVICE_NAME
+      : `${env.OTEL_SERVICE_NAME}-worker`,
+    environment: env.NODE_ENV,
     otlpEndpoint: env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    ...(env.OTEL_EXPORTER_OTLP_HEADERS
+      ? { otlpHeaders: env.OTEL_EXPORTER_OTLP_HEADERS }
+      : {}),
   });
 
   const logger = createLogger({
     service: "atlas-worker",
     level: env.LOG_LEVEL,
+    environment: env.NODE_ENV,
   });
-  const metrics = createMetricsRegistry("atlas-worker");
+  const metrics = createMetricsRegistry("atlas-worker", {
+    environment: env.NODE_ENV,
+  });
   const prisma = createPrismaClient(env.DATABASE_URL);
   const objectStore = new S3ObjectStore({
     endpoint: env.S3_ENDPOINT,

@@ -20,8 +20,11 @@ if [[ -z "$TOKEN" ]]; then
   exit 1
 fi
 
-TMP=$(mktemp)
-echo "atlas happy path $(date -Iseconds)" >"$TMP"
+# Prefer a repo-local temp file: mingw/Windows curl cannot read Git Bash /tmp paths.
+TMP_DIR="${TMPDIR:-./.tmp}"
+mkdir -p "$TMP_DIR"
+TMP="$TMP_DIR/atlas-happy-path-$$.txt"
+echo "atlas happy path $(date +%Y-%m-%dT%H:%M:%S%z)" >"$TMP"
 
 UPLOAD=$(curl -sf -X POST "$API_BASE/v1/documents" \
   -H "authorization: Bearer $TOKEN" \

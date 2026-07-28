@@ -39,6 +39,15 @@ export async function buildApp(_env: Env, deps: AppDeps) {
       },
       reply.elapsedTime / 1000,
     );
+    request.log.info(
+      {
+        method: request.method,
+        route,
+        statusCode: reply.statusCode,
+        durationMs: Math.round(reply.elapsedTime),
+      },
+      "request completed",
+    );
   });
 
   await app.register(requestContextPlugin);
@@ -55,7 +64,7 @@ export async function buildApp(_env: Env, deps: AppDeps) {
       info: {
         title: "Atlas API",
         description:
-          "Enterprise knowledge platform — ingestion, extraction, and semantic search",
+          "Production-grade AI platform — document ingestion, embeddings, and tenant-scoped semantic search",
         version: "0.2.0",
       },
       components: {

@@ -52,6 +52,9 @@ export interface IngestionJob {
   status: JobStatus;
   attemptCount: number;
   lastError: string | null;
+  /** Original W3C traceparent from the upload (for manual retry span links). */
+  linkedTraceparent: string | null;
+  linkedTracestate: string | null;
   startedAt: Date | null;
   completedAt: Date | null;
   idempotencyKey: string | null;

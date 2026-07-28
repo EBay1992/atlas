@@ -4,7 +4,8 @@ const JOB_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   queued: ["processing", "failed"],
   processing: ["completed", "failed"],
   completed: [],
-  failed: [],
+  // Manual retry requeues a failed job as a new business action.
+  failed: ["queued"],
 };
 
 const DOCUMENT_TRANSITIONS: Record<DocumentStatus, readonly DocumentStatus[]> = {
@@ -12,7 +13,7 @@ const DOCUMENT_TRANSITIONS: Record<DocumentStatus, readonly DocumentStatus[]> = 
   queued: ["processing", "failed"],
   processing: ["completed", "failed"],
   completed: [],
-  failed: [],
+  failed: ["queued"],
 };
 
 export class IllegalStateTransitionError extends Error {

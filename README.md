@@ -1,73 +1,147 @@
 # Atlas
 
-**Atlas** is an open-source enterprise knowledge platform for document ingestion,
-extraction, embedding, and tenant-scoped semantic search.
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](./package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
+[![pnpm](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm&logoColor=white)](./pnpm-workspace.yaml)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-OTLP-000000?logo=opentelemetry&logoColor=white)](./docs/adr/0003-opentelemetry-w3c-over-vendor-sdks.md)
+[![Architecture](https://img.shields.io/badge/architecture-hexagonal-0A66C2)](./docs/architecture/overview.md)
+[![Status](https://img.shields.io/badge/status-reference%20implementation-informational)](./docs/README.md)
 
-Upload a document → store bytes in object storage → enqueue a job → extract &
-chunk text → embed with a local model → index in a vector database → search with
-citations.
+**Production-grade AI platform demonstrating modern software architecture for LLM applications.**
 
+Atlas is not a chatbot demo, a RAG tutorial, or a Qdrant sample. It is a **reference implementation** of an enterprise AI platform: hexagonal boundaries, async ingestion, tenant isolation, object storage, vector retrieval with citations, and OpenTelemetry end-to-end.
+
+> If a Staff Engineer from OpenAI, Anthropic, Vercel, or Microsoft spent a weekend in this repository, what principles would they take home?
+
+That question drives every design decision.
+
+---
+
+## What you get
+
+```mermaid
+flowchart LR
+  U[Upload] --> S[Object storage]
+  S --> Q[Queue]
+  Q --> E[Extract]
+  E --> C[Chunk]
+  C --> M[Embed]
+  M --> I[Index]
+  I --> R[Search]
+  R --> T[Citations]
 ```
-┌─────────┐     ┌──────────┐     ┌─────────┐     ┌──────────┐
-│  Client │────▶│ Atlas API│────▶│ Postgres│     │  MinIO   │
-└─────────┘     └────┬─────┘     └─────────┘     └────▲─────┘
-                     │  enqueue                        │ putObject
-                     ▼                                 │
-                ┌─────────┐     ┌─────────┐     ┌──────┴───┐
-                │  Redis  │────▶│ Worker  │────▶│  Qdrant  │
-                │ BullMQ  │     │ extract │     │ vectors  │
-                └─────────┘     │ chunk   │     └──────────┘
-                                │ embed   │◀──── Ollama
-                                └─────────┘
+
+| Concern | How Atlas handles it |
+|---------|----------------------|
+| **Architecture** | Hexagonal ports & adapters, vertical slices, pnpm monorepo |
+| **Ingestion** | Async BullMQ jobs, retries, DLQ, idempotent reindex |
+| **Storage** | MinIO/S3 for bytes; Postgres for metadata & citations; Qdrant for vectors |
+| **Embeddings** | Local Ollama (`qwen3-embedding`) behind an `EmbeddingProvider` port |
+| **Retrieval** | Tenant-filtered semantic search with chunk citations |
+| **Tenancy** | JWT `tenantId` only — never from request bodies |
+| **Observability** | OTel traces/metrics/logs + Prometheus + Aspire Dashboard |
+| **Ops** | Health probes, OpenAPI, Compose fallback, optional Aspire control plane |
+
+---
+
+## Feature matrix
+
+| Capability | Status | Notes |
+|------------|--------|--------|
+| Authenticated upload API | ✅ | Multipart, ≤50MB, `Idempotency-Key` |
+| Async ingestion pipeline | ✅ | BullMQ + DLQ + optimistic state machine |
+| Object storage (S3 API) | ✅ | MinIO locally; swap via port |
+| PDF + text extraction | ✅ | Line/page repair for PDFs |
+| Chunking with overlap | ✅ | Word-boundary, configurable size |
+| Vector indexing (Qdrant) | ✅ | Cosine, tenant payload filter |
+| Semantic search + citations | ✅ | Hydrated chunk text from Postgres |
+| Multi-tenant isolation | ✅ | JWT-scoped API, DB, and Qdrant |
+| OpenAPI / Swagger UI | ✅ | `/docs` |
+| Liveness / readiness | ✅ | Postgres, Redis, MinIO, Qdrant, Ollama |
+| Prometheus metrics | ✅ | `/metrics` |
+| OpenTelemetry (OTLP) | ✅ | Trace continuity across API → queue → worker |
+| Aspire AppHost | ✅ | Control plane only — never imported by domain |
+| Hybrid BM25 + vector | 🗺️ | Roadmap |
+| Cross-encoder rerank | 🗺️ | Roadmap |
+| Conversational RAG / streaming answers | 🗺️ | Roadmap |
+| Semantic cache | 🗺️ | Roadmap |
+| Retrieval debugger | 🗺️ | Roadmap |
+| OIDC / SSO | 🗺️ | Roadmap |
+| Automated IR evaluation suite | 🗺️ | Fixtures exist; harness planned |
+
+Legend: ✅ shipped · 🗺️ planned
+
+---
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  Client([Client]) --> API["Atlas API"]
+  API --> PG[(Postgres)]
+  API --> MinIO[(MinIO)]
+  API --> Redis[(Redis)]
+  Redis --> Worker["Atlas Worker"]
+  Worker --> MinIO
+  Worker --> PG
+  Worker --> Qdrant[(Qdrant)]
+  Worker --> Ollama["Ollama"]
+  API --> Qdrant
+  API --> Ollama
 ```
 
-## Features
+**Dependency rule:** `packages/domain` never imports `packages/infra`. Adapters implement ports; apps compose them.
 
-- **Authenticated upload API** with per-tenant idempotency keys
-- **Async ingestion** via BullMQ (retries + dead-letter queue)
-- **Object storage** (MinIO / S3-compatible) — bytes never live in Postgres
-- **Text extraction** for plain text and PDF (with PDF line/page repair)
-- **Word-boundary chunking** with overlap
-- **Local embeddings** via Ollama (`qwen3-embedding`)
-- **Vector search** via Qdrant with tenant filters
-- **Chunk citations** stored in Postgres for readable search hits
-- **OpenAPI**, health probes, and Prometheus metrics
-- **Hexagonal ports** so storage / queue / embed / vector adapters can be swapped
+Deep dive: [Architecture overview](./docs/architecture/overview.md) · [AI pipeline](./docs/architecture/ai-pipeline.md) · [Sequence diagrams](./docs/architecture/sequence-diagrams.md) · [Deployment](./docs/architecture/deployment.md)
+
+---
 
 ## Repository layout
 
-```
+```text
 atlas/
+├── apphost/                 # Aspire AppHost (control plane ONLY)
 ├── apps/
 │   ├── api/                 # Fastify REST + OpenAPI
 │   └── worker/              # BullMQ ingestion consumer
 ├── packages/
-│   ├── domain/              # Entities, ports, chunker, text normalize
+│   ├── domain/              # Entities, ports, chunker, state machine
 │   ├── infra/               # Prisma, MinIO, BullMQ, Ollama, Qdrant
 │   ├── config/              # Zod-validated environment
-│   ├── observability/       # Pino + Prometheus (+ optional OTel)
+│   ├── observability/       # Pino + Prometheus + OpenTelemetry
 │   └── test-utils/
-├── fixtures/seed-docs/      # Polysemy evaluation documents
+├── docs/                    # Engineering handbook
+│   ├── architecture/
+│   ├── engineering/
+│   ├── adr/
+│   ├── benchmark/
+│   ├── evaluation/
+│   ├── security/
+│   ├── performance/
+│   └── contributing/
+├── fixtures/seed-docs/      # Polysemy search-eval documents
 ├── scripts/                 # happy-path + seed helpers
-└── docker-compose.yml       # Postgres, Redis, MinIO, Qdrant
+└── docker-compose.yml
 ```
 
-## Prerequisites
+---
 
-| Tool | Version | Notes |
-|------|---------|--------|
-| Node.js | 20+ | See `.nvmrc` |
-| pnpm | 9+ | `corepack enable` |
-| Docker / Compose | recent | Infra services |
-| [Ollama](https://ollama.com) | latest | Host process (not in Compose) |
+## Quick start
 
-Pull the embedding model once:
+### Prerequisites
+
+| Tool | Version |
+|------|---------|
+| Node.js | 20+ (`.nvmrc`) |
+| pnpm | 9+ (`corepack enable`) |
+| Docker Compose | recent |
+| [Ollama](https://ollama.com) | host process (not in Compose) |
 
 ```bash
 ollama pull qwen3-embedding
 ```
 
-## Quick start
+### Option A — Docker Compose + pnpm
 
 ```bash
 git clone https://github.com/EBay1992/atlas.git
@@ -77,210 +151,180 @@ cp .env.example .env
 pnpm install
 docker compose up -d postgres redis minio minio-init qdrant
 
-pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
+pnpm db:generate && pnpm db:migrate && pnpm db:seed
 
 pnpm --filter @atlas/config build \
  && pnpm --filter @atlas/domain build \
  && pnpm --filter @atlas/observability build \
  && pnpm --filter @atlas/infra build
 
-# Terminal 1
-pnpm dev:api
-
-# Terminal 2
-pnpm dev:worker
+pnpm dev:api      # terminal 1
+pnpm dev:worker   # terminal 2
 ```
 
-Verify:
+### Option B — Aspire AppHost (recommended local control plane)
 
 ```bash
-curl -s http://localhost:3000/health/ready | jq
-open http://localhost:3000/docs
+cp .env.example .env
+pnpm install
+pnpm --filter @atlas/config build \
+ && pnpm --filter @atlas/domain build \
+ && pnpm --filter @atlas/observability build \
+ && pnpm --filter @atlas/infra build
+
+pnpm aspire:restore
+pnpm aspire:run
 ```
 
-### Seeded local credentials
+Details: [`apphost/README.md`](./apphost/README.md) · [ADR 0002](./docs/adr/0002-aspire-as-control-plane-not-framework.md)
+
+### Observability
+
+```bash
+docker compose --profile observability up -d aspire-dashboard
+```
+
+```bash
+# .env
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+| Signal | What to look for |
+|--------|------------------|
+| **Traces** | `documents.upload` → `jobs.enqueue` → `ingestion.process` (extract / chunk / embed / qdrant) |
+| **Correlation** | `correlationId === documentId` across retries |
+| **Manual retry** | New Trace ID + span **link** to the original upload |
+
+See [Observability guide](./docs/architecture/observability.md).
+
+### Seeded credentials (lab only)
 
 | Field | Value |
 |-------|--------|
 | Email | `admin@acme.local` |
 | Password | `atlas-dev-password` |
 
-These exist only for local demos. Change or remove them before any shared deploy.
-See [SECURITY.md](./SECURITY.md).
+Change before any shared deploy. [Security](./SECURITY.md)
 
-## Configuration
+---
 
-Copy [`.env.example`](./.env.example) → `.env`. Important variables:
-
-| Variable | Purpose | Local default |
-|----------|---------|----------------|
-| `JWT_SECRET` | Signs access tokens | placeholder (must change for production) |
-| `DATABASE_URL` | Postgres | `postgresql://atlas:atlas@localhost:5432/atlas` |
-| `REDIS_HOST` / `REDIS_PORT` | BullMQ | `localhost:6379` |
-| `S3_*` | MinIO / S3 | Compose MinIO on `:9000` |
-| `OLLAMA_BASE_URL` | Embeddings HTTP API | `http://localhost:11434` |
-| `OLLAMA_EMBEDDING_MODEL` | Model name | `qwen3-embedding:latest` |
-| `EMBEDDING_DIMENSIONS` | Must match model | `4096` |
-| `QDRANT_URL` | Vector DB | `http://localhost:6333` |
-| `CHUNK_SIZE` / `CHUNK_OVERLAP` | Chunker | `800` / `120` |
-
-When API/worker run **inside** Compose, set:
-
-```env
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-QDRANT_URL=http://qdrant:6333
-DATABASE_URL=postgresql://atlas:atlas@postgres:5432/atlas?schema=public
-REDIS_HOST=redis
-S3_ENDPOINT=http://minio:9000
-```
-
-## End-to-end usage
+## End-to-end demo
 
 ```bash
-# Login
 TOKEN=$(curl -s -X POST http://localhost:3000/v1/auth/login \
   -H 'content-type: application/json' \
   -d '{"email":"admin@acme.local","password":"atlas-dev-password"}' \
   | jq -r .accessToken)
 
-# Upload (idempotent per tenant + Idempotency-Key)
 curl -s -X POST http://localhost:3000/v1/documents \
   -H "authorization: Bearer $TOKEN" \
-  -H "idempotency-key: example-1" \
+  -H "idempotency-key: demo-1" \
   -F file=@fixtures/seed-docs/01-apple-orchard-cider.txt | jq
 
-# Poll job until completed | failed
-curl -s "http://localhost:3000/v1/jobs/<jobId>" \
-  -H "authorization: Bearer $TOKEN" | jq
-
-# Semantic search
 curl -s -X POST http://localhost:3000/v1/search \
   -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' \
   -d '{"query":"heirloom cider orchard","limit":5}' | jq
 ```
 
-Or run the bundled script:
+Or: `bash scripts/happy-path.sh`
 
-```bash
-bash scripts/happy-path.sh
-```
-
-### Useful URLs
-
-| URL | Description |
-|-----|-------------|
+| URL | Purpose |
+|-----|---------|
 | http://localhost:3000/docs | OpenAPI UI |
-| http://localhost:3000/health/live | Liveness |
-| http://localhost:3000/health/ready | Readiness (Postgres, Redis, MinIO, Qdrant, Ollama) |
-| http://localhost:3000/metrics | Prometheus metrics |
-| http://localhost:9001 | MinIO console (`atlasminio` / `atlasminio`) |
+| http://localhost:3000/health/ready | Dependency readiness |
+| http://localhost:3000/metrics | Prometheus |
+| http://localhost:18888 | Aspire Dashboard (observability profile) |
+| http://localhost:9001 | MinIO console |
 | http://localhost:6333/dashboard | Qdrant dashboard |
 
-## Search evaluation fixtures
+> **Screenshots** — live captures live in [`docs/architecture/assets/`](./docs/architecture/assets/README.md).
 
-[`fixtures/seed-docs`](./fixtures/seed-docs) contains ten short documents built around
-ambiguous words (Apple, Java, bank, crane, Mercury). Use them to verify semantic
-disambiguation:
+![Demo walkthrough](./docs/architecture/assets/demo.gif)
 
-```bash
-pnpm -w run seed:docs
-```
+![OpenAPI](./docs/architecture/assets/openapi.png)
 
-Sense-rich queries should rank the matching document first; single-word queries
-may mix senses. Details: [`fixtures/seed-docs/README.md`](./fixtures/seed-docs/README.md).
+![Health ready](./docs/architecture/assets/health-ready.png)
 
-## Architecture notes
+![MinIO object](./docs/architecture/assets/minio-object.png)
 
-### Ports & adapters
+![Ingestion trace](./docs/architecture/assets/trace-upload.png)
 
-Domain code depends on ports (`ObjectStore`, `JobQueue`, `EmbeddingProvider`,
-`VectorStore`, repositories). Infrastructure packages provide adapters (S3/MinIO,
-BullMQ, Ollama, Qdrant, Prisma). Feature routes live as vertical slices under
-`apps/api/src/routes/`.
+![Manual retry trace](./docs/architecture/assets/trace-manual-retry.png)
 
-### Ingestion pipeline
+![Search hit](./docs/architecture/assets/search-hit.png)
 
-1. API streams file bytes to object storage
-2. API writes document + job rows (tenant from JWT only)
-3. API enqueues BullMQ payload `{ jobId, documentId, tenantId, storageKey }`
-4. Worker downloads object → extract → normalize → chunk → embed → upsert Qdrant
-5. Worker stores chunk text in Postgres for citations
-6. Re-processing deletes prior vectors/chunks for that document (idempotent index)
+![Qdrant collection](./docs/architecture/assets/qdrant-collection.png)
 
-### Dual-write order
+---
 
-**Object bytes → DB metadata → queue.**  
-If DB fails after object write, the API best-effort deletes the object. If enqueue
-fails after DB write, job/document are marked `failed`.
+## Documentation
 
-### Tenancy
+| Section | Purpose |
+|---------|---------|
+| [docs/](./docs/README.md) | Engineering handbook index |
+| [Architecture](./docs/architecture/overview.md) | System design, boundaries, diagrams |
+| [AI pipeline](./docs/architecture/ai-pipeline.md) | Ingest → embed → retrieve |
+| [ADRs](./docs/adr/README.md) | Why we chose what we chose |
+| [Engineering](./docs/engineering/monorepo.md) | Monorepo, testing, standards |
+| [Evaluation](./docs/evaluation/README.md) | Search quality fixtures & future harness |
+| [Benchmark](./docs/benchmark/README.md) | Latency / throughput targets |
+| [Security](./docs/security/overview.md) | Tenancy, secrets, hardening |
+| [Contributing](./docs/contributing/README.md) | How to change Atlas safely |
 
-`tenantId` always comes from the JWT. Search filters Qdrant by `tenantId`. Never
-accept tenant IDs from request bodies.
+---
 
-### Job state machine
+## Benchmarks & evaluation
 
-`queued → processing → completed|failed` with optimistic updates
-(`UPDATE … WHERE status = from`). Illegal transitions are rejected in domain code.
+| Command | Intent | Status |
+|---------|--------|--------|
+| `pnpm test` | Unit + package tests | ✅ |
+| Integration Vitest | API + worker happy path | ✅ (stack required) |
+| `pnpm run benchmark` | Latency, embed & queue throughput | 🗺️ |
+| `pnpm run evaluate` | Precision, Recall, MRR, Hit Rate | 🗺️ |
 
-## Security
+Polysemy fixtures today: [`fixtures/seed-docs`](./fixtures/seed-docs) · `pnpm -w run seed:docs`
 
-- `.env` is gitignored; only `.env.example` is committed
-- Docker images exclude `.env` via `.dockerignore`
-- Production boot refuses weak/default `JWT_SECRET` values
-- Passwords are bcrypt-hashed; JWTs are signed with HS256
-- Default Compose credentials are **lab-only**
+---
 
-Read the full policy: [SECURITY.md](./SECURITY.md).
+## Roadmap
+
+Phased toward a memorable enterprise AI platform — not feature sprawl.
+
+| Phase | Focus |
+|-------|--------|
+| **1 — Foundation** | Branding, docs, ADRs, diagrams *(this release)* |
+| **2 — Beautiful code** | Observability DSL, worker factories, error mapping, Result types |
+| **3 — Engineering quality** | Architecture tests, benchmark suite, IR evaluation, load tests |
+| **4 — Production AI** | Hybrid search, reranker, semantic cache, prompt versioning, retrieval debugger, cost dashboard |
+| **5 — Platform “wow”** | Live traces UI, MCP, model routing, circuit breakers, AI playground |
+
+Track decisions in [ADRs](./docs/adr/README.md). Prefer one reviewable change at a time.
+
+---
 
 ## Development
 
 ```bash
-pnpm typecheck          # strict TypeScript (unused locals, exact optionals, …)
-pnpm build              # typecheck then compile all packages
+pnpm typecheck
+pnpm build
 pnpm --filter @atlas/domain test
-pnpm lint               # currently runs typecheck
-```
-
-Integration test (API + worker + infra must be up):
-
-```bash
 pnpm --filter @atlas/api exec vitest run src/ingestion.integration.test.ts
 ```
 
-Prisma workflow:
+Prisma: `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed`
 
-```bash
-pnpm db:generate        # also runs on postinstall
-pnpm db:migrate
-pnpm db:seed
-```
+---
 
-## Troubleshooting
+## Why Atlas exists
 
-| Symptom | Likely fix |
-|---------|------------|
-| `health/ready` → ollama error | Start Ollama; `ollama pull qwen3-embedding` |
-| `health/ready` → qdrant error | `docker compose up -d qdrant` |
-| Embed dim mismatch | Align `EMBEDDING_DIMENSIONS` with the model (4096 for qwen3-embedding) |
-| Worker can't reach Ollama from Docker | Use `host.docker.internal` + `extra_hosts` (already in Compose) |
-| PDF chunks start mid-word | Re-upload after latest extract/normalize; old indexes keep prior text |
-| `JWT_SECRET` production error | Set a 32+ character random secret |
-| Port 3000 in use | Stop other API containers/processes, or change `API_PORT` |
+Atlas is an **engineering book in repository form**.
 
-## Roadmap
+Every port, ADR, and span name should teach how to design LLM systems: clear boundaries, async reliability, tenant safety, and observability you can operate — not a notebook that happens to call an API.
 
-- Hybrid lexical + vector retrieval and reranking
-- Conversational RAG answers
-- Enterprise connectors (SharePoint, Gmail, …)
-- Knowledge graph enrichment
-- Durable multi-step workflows (e.g. Temporal)
-- Stronger auth (OIDC/SSO) and rate limiting
+---
 
 ## License
 
-See repository license (if present) or contact the maintainer. Contributions
-welcome via pull requests.
+See repository license (if present) or contact the maintainer. Contributions welcome — start with [Contributing](./docs/contributing/README.md).

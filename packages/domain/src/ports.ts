@@ -72,6 +72,8 @@ export interface JobRepository {
       queueJobId?: string | null;
       attemptCount?: number;
       lastError?: string | null;
+      linkedTraceparent?: string | null;
+      linkedTracestate?: string | null;
       startedAt?: Date | null;
       completedAt?: Date | null;
     },
@@ -88,7 +90,18 @@ export interface IngestionJobPayload {
   documentId: string;
   tenantId: string;
   storageKey: string;
+  /** Stable business correlation — equals documentId after mint. */
+  correlationId: string;
+  userId?: string;
+  /** W3C traceparent for continuing the upload trace in the worker. */
   traceparent?: string;
+  /** W3C tracestate (optional). */
+  tracestate?: string;
+  /** Automatic (default) continues parent; manual starts a linked root span. */
+  retryKind?: "automatic" | "manual";
+  /** Prior upload trace when retryKind=manual. */
+  linkedTraceparent?: string;
+  linkedTracestate?: string;
 }
 
 export interface EnqueueResult {
