@@ -26,9 +26,7 @@ pnpm -w run seed:docs
 
 Ambiguous terms (Apple, Java, bank, …) should rank the matching sense first for sense-rich queries. See the fixtures README for suggested queries.
 
-Live qualitative example (committed capture):
-
-![Search hit](../architecture/assets/search-hit.png)
+Example API response from a local capture: [`../architecture/assets/search-hit.json`](../architecture/assets/search-hit.json).
 
 ## Tomorrow
 

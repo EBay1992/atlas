@@ -7,7 +7,7 @@
 ## Context
 
 Upload spans API → Postgres/MinIO → BullMQ → worker → extract/chunk/embed/Qdrant.
-Interview and ops both need one distributed timeline for a business operation, plus a stable
+Operators need one distributed timeline for a business operation, plus a stable
 identity that survives across days (reviews, manual retries).
 
 ## Decision

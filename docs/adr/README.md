@@ -1,10 +1,10 @@
 # Architecture Decision Records
 
-ADRs record **why** Atlas looks the way it does. They are part of the product: a Staff Engineer should be able to learn the trade-offs without reading every line of code.
+ADRs document significant technical choices: context, decision, alternatives, and consequences.
 
 Template fields: **Status** · **Context** · **Decision** · **Alternatives** · **Consequences** · **Revisit when**
 
-## Topic map (vision checklist)
+## Topic map
 
 | Topic | ADR |
 |-------|-----|
@@ -40,7 +40,7 @@ Template fields: **Status** · **Context** · **Decision** · **Alternatives** �
 
 ## Writing a new ADR
 
-1. Copy the structure from an existing accepted ADR.  
+1. Follow the structure of an existing accepted ADR.  
 2. Number sequentially (`0013-…`).  
-3. Link it from this README topic map if it answers a recurring “why”.  
-4. Prefer honesty about revisit conditions over marketing certainty.  
+3. Link it from this index when it answers a recurring design question.  
+4. State revisit conditions explicitly.  

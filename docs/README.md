@@ -1,29 +1,27 @@
 # Atlas documentation
 
-This handbook is how Atlas presents itself as a **reference implementation of a production-grade enterprise AI platform** — not a chatbot demo.
+Technical documentation for Atlas: architecture, ADRs, engineering standards, evaluation, and operations.
 
-If you are new:
+Getting started:
 
 1. [Architecture overview](./architecture/overview.md)
 2. [AI pipeline](./architecture/ai-pipeline.md)
 3. [ADR index](./adr/README.md)
-4. Root [README](../README.md) for quick start
+4. Root [README](../README.md) for local setup
 
 ## Structure
 
 | Folder | Audience | Contents |
 |--------|----------|----------|
-| [`architecture/`](./architecture/overview.md) | Architects, new contributors | System design, pipeline, sequences, deployment, observability |
+| [`architecture/`](./architecture/overview.md) | Contributors | System design, pipeline, sequences, deployment, observability |
 | [`engineering/`](./engineering/monorepo.md) | Implementers | Monorepo, testing strategy, coding standards |
-| [`adr/`](./adr/README.md) | Everyone reviewing trade-offs | Architecture Decision Records |
-| [`benchmark/`](./benchmark/README.md) | Perf owners | Latency / throughput suite (planned + conventions) |
+| [`adr/`](./adr/README.md) | Reviewers | Architecture Decision Records |
+| [`benchmark/`](./benchmark/README.md) | Performance | Latency / throughput suite (planned) |
 | [`evaluation/`](./evaluation/README.md) | Retrieval quality | Fixtures, metrics, future `pnpm evaluate` |
 | [`security/`](./security/overview.md) | Operators | Tenancy, secrets, hardening |
 | [`performance/`](./performance/README.md) | Operators | Tuning knobs, known bottlenecks |
-| [`contributing/`](./contributing/README.md) | Contributors | PR norms, incremental change policy |
+| [`contributing/`](./contributing/README.md) | Contributors | Contribution guidelines |
 
-## Design north star
+## Guidelines
 
-> Would a Staff Engineer copy ideas from this project?
-
-Prefer maintainability, architectural consistency, and developer experience over novelty. Work incrementally; one concern per PR.
+Prefer maintainability and clear package boundaries over premature abstraction. Keep changes incremental and reviewable.

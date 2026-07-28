@@ -23,7 +23,7 @@ Atlas is also often confused with “LLM token streaming.” This ADR clarifies 
 
 | Option | Why not (now) |
 |--------|----------------|
-| Buffer whole file in memory | Simple; fails the platform narrative under load |
+| Buffer whole file in memory | Simple; does not scale under concurrent large uploads |
 | Write temp files on API disk | Extra IO and cleanup; still not the system of record |
 | SSE progress for ingestion | Better UX later; more moving parts than polling for Week-1 reliability |
 

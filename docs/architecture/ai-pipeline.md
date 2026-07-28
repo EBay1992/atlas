@@ -54,11 +54,9 @@ Those belong to Phase 4+ of the [roadmap](../../README.md#roadmap). The ports (`
 
 ## Evaluation hook
 
-Polysemy fixtures under `fixtures/seed-docs/` stress sense disambiguation. Automated Precision / Recall / MRR is planned — see [Evaluation](../evaluation/README.md).
+Polysemy fixtures under `fixtures/seed-docs/` exercise sense disambiguation. Automated Precision / Recall / MRR is planned — see [Evaluation](../evaluation/README.md).
 
-Example search hit from a live capture (`heirloom cider orchard` → orchard doc, not “Apple” the company):
-
-![Semantic search hit](./assets/search-hit.png)
+Example committed search response: [`assets/search-hit.json`](./assets/search-hit.json).
 
 Qdrant collection used by the pipeline (`atlas_chunks`, 4096-dim Cosine):
 

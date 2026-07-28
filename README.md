@@ -7,13 +7,9 @@
 [![Architecture](https://img.shields.io/badge/architecture-hexagonal-0A66C2)](./docs/architecture/overview.md)
 [![Status](https://img.shields.io/badge/status-reference%20implementation-informational)](./docs/README.md)
 
-**Production-grade AI platform demonstrating modern software architecture for LLM applications.**
+**Production-grade AI platform for LLM applications.**
 
-Atlas is not a chatbot demo, a RAG tutorial, or a Qdrant sample. It is a **reference implementation** of an enterprise AI platform: hexagonal boundaries, async ingestion, tenant isolation, object storage, vector retrieval with citations, and OpenTelemetry end-to-end.
-
-> If a Staff Engineer from OpenAI, Anthropic, Vercel, or Microsoft spent a weekend in this repository, what principles would they take home?
-
-That question drives every design decision.
+Atlas is a reference implementation of an enterprise knowledge platform: hexagonal architecture, asynchronous document ingestion, tenant isolation, object storage, vector search with citations, and OpenTelemetry instrumentation.
 
 ---
 
@@ -253,8 +249,6 @@ Or: `bash scripts/happy-path.sh`
 
 ![Manual retry trace](./docs/architecture/assets/trace-manual-retry.png)
 
-![Search hit](./docs/architecture/assets/search-hit.png)
-
 ![Qdrant collection](./docs/architecture/assets/qdrant-collection.png)
 
 ---
@@ -290,17 +284,17 @@ Polysemy fixtures today: [`fixtures/seed-docs`](./fixtures/seed-docs) · `pnpm -
 
 ## Roadmap
 
-Phased toward a memorable enterprise AI platform — not feature sprawl.
+Planned work, ordered by dependency:
 
 | Phase | Focus |
 |-------|--------|
-| **1 — Foundation** | Branding, docs, ADRs, diagrams *(this release)* |
-| **2 — Beautiful code** | Observability DSL, worker factories, error mapping, Result types |
-| **3 — Engineering quality** | Architecture tests, benchmark suite, IR evaluation, load tests |
-| **4 — Production AI** | Hybrid search, reranker, semantic cache, prompt versioning, retrieval debugger, cost dashboard |
-| **5 — Platform “wow”** | Live traces UI, MCP, model routing, circuit breakers, AI playground |
+| **1 — Foundation** | Documentation, ADRs, architecture diagrams |
+| **2 — Cross-cutting APIs** | Observability helpers, worker factories, error mapping, Result types |
+| **3 — Quality gates** | Architecture tests, benchmarks, IR evaluation, load tests |
+| **4 — Retrieval quality** | Hybrid search, reranker, semantic cache, prompt versioning, retrieval debugger, cost tracking |
+| **5 — Platform operations** | Live traces UI, MCP, model routing, circuit breakers, playground |
 
-Track decisions in [ADRs](./docs/adr/README.md). Prefer one reviewable change at a time.
+Record material decisions in [ADRs](./docs/adr/README.md). Prefer small, reviewable changes.
 
 ---
 
@@ -314,14 +308,6 @@ pnpm --filter @atlas/api exec vitest run src/ingestion.integration.test.ts
 ```
 
 Prisma: `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed`
-
----
-
-## Why Atlas exists
-
-Atlas is an **engineering book in repository form**.
-
-Every port, ADR, and span name should teach how to design LLM systems: clear boundaries, async reliability, tenant safety, and observability you can operate — not a notebook that happens to call an API.
 
 ---
 

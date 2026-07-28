@@ -1,18 +1,18 @@
 # Contributing
 
-Thank you for helping Atlas stay a credible **enterprise AI platform reference**.
+Contributions to Atlas are welcome.
 
 ## Before you start
 
 1. Read [Architecture overview](../architecture/overview.md).  
 2. Skim [Coding standards](../engineering/coding-standards.md).  
-3. Check [ADRs](../adr/README.md) so you do not reopen settled trade-offs casually.  
+3. Check [ADRs](../adr/README.md) for settled trade-offs.  
 
 ## Change policy
 
-- **One logical concern per PR** — reviewable by a Staff Engineer in one sitting.  
-- Refactors must **compile**, keep tests green, and **preserve public behavior** unless the PR explicitly changes the contract.  
-- New non-obvious trade-offs → **new ADR**.  
+- Keep each PR focused on one concern.  
+- Refactors must compile, keep tests green, and preserve public behavior unless the PR changes the contract.  
+- Non-obvious trade-offs should get a new ADR.  
 - Do not import Aspire into `packages/domain` or `packages/infra`.  
 
 ## Local checklist
