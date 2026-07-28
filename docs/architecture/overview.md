@@ -7,19 +7,13 @@ Atlas is a **pnpm monorepo** implementing a tenant-scoped knowledge platform:
 ## System context
 
 ```mermaid
-C4Context
-  title Atlas — system context
-  Person(user, "Tenant user", "Uploads docs, searches")
-  System(atlas, "Atlas", "Ingest, embed, search with citations")
-  System_Ext(ollama, "Ollama", "Local embeddings")
-  System_Ext(client, "HTTP client / future UI", "OpenAPI consumer")
-
-  Rel(user, client, "Uses")
-  Rel(client, atlas, "JWT + REST")
-  Rel(atlas, ollama, "POST /api/embed")
+flowchart LR
+  User([Tenant user]) --> Client[HTTP client]
+  Client -->|"JWT + REST"| Atlas[Atlas]
+  Atlas -->|"POST /api/embed"| Ollama[Ollama]
 ```
 
-*(Rendered where Mermaid C4 is supported; otherwise see the deployment diagram below.)*
+Atlas owns ingest, embed, and tenant-scoped search with citations. Ollama is an external embedding runtime.
 
 ## Logical components
 
@@ -41,11 +35,11 @@ flowchart TB
     API[api routes]
     W[worker processor]
   end
-  subgraph domain [packages/domain]
+  subgraph domain ["packages/domain"]
     Ports[Ports]
-    Pure[Chunk / normalize / state machine]
+    Pure["Chunk / normalize / state machine"]
   end
-  subgraph infra [packages/infra]
+  subgraph infra ["packages/infra"]
     Adapters[Adapters]
   end
   API --> Ports

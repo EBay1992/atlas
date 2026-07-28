@@ -7,16 +7,16 @@ Atlas supports two local orchestration paths. Application code does not depend o
 ```mermaid
 flowchart TB
   subgraph host [Developer host]
-    Ollama[Ollama :11434]
-    API[atlas-api :3000]
-    Worker[atlas-worker]
+    Ollama["Ollama :11434"]
+    API["atlas-api :3000"]
+    Worker["atlas-worker"]
   end
   subgraph compose [docker compose]
-    PG[(Postgres :5432)]
-    Redis[(Redis :6379)]
-    MinIO[(MinIO :9000/:9001)]
-    Qdrant[(Qdrant :6333)]
-    Dash[Aspire Dashboard :18888<br/>profile: observability]
+    PG[("Postgres :5432")]
+    Redis[("Redis :6379")]
+    MinIO[("MinIO :9000")]
+    Qdrant[("Qdrant :6333")]
+    Dash["Aspire Dashboard :18888"]
   end
   API --> PG
   API --> Redis
@@ -28,8 +28,8 @@ flowchart TB
   Worker --> MinIO
   Worker --> Qdrant
   Worker --> Ollama
-  API -.->|OTLP :4318| Dash
-  Worker -.->|OTLP :4318| Dash
+  API -.->|"OTLP :4318"| Dash
+  Worker -.->|"OTLP :4318"| Dash
 ```
 
 Compose can also run API/worker as containers; then `OLLAMA_BASE_URL=http://host.docker.internal:11434` and service DNS names apply (see root README).
@@ -38,14 +38,14 @@ Compose can also run API/worker as containers; then `OLLAMA_BASE_URL=http://host
 
 ```mermaid
 flowchart LR
-  AppHost[apphost<br/>Aspire]
+  AppHost["Aspire AppHost"]
   AppHost --> API[api]
   AppHost --> Worker[worker]
   AppHost --> PG[(postgres)]
   AppHost --> Redis[(redis)]
   AppHost --> MinIO[(minio)]
   AppHost --> Qdrant[(qdrant)]
-  AppHost --> Dash[Dashboard / OTLP]
+  AppHost --> Dash["Dashboard / OTLP"]
 ```
 
 **Rule:** Aspire orchestrates processes and resources. It is **never** imported by `packages/domain` or `packages/infra` ([ADR 0002](../adr/0002-aspire-as-control-plane-not-framework.md), [ADR 0004](../adr/0004-compose-remains-fallback.md)).

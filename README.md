@@ -19,10 +19,16 @@ That question drives every design decision.
 
 ## What you get
 
-```text
-Upload → Object storage → Queue → Extract → Chunk → Embed → Index
-                                                              ↓
-                         Search (tenant-scoped) ←—— Citations (Postgres)
+```mermaid
+flowchart LR
+  U[Upload] --> S[Object storage]
+  S --> Q[Queue]
+  Q --> E[Extract]
+  E --> C[Chunk]
+  C --> M[Embed]
+  M --> I[Index]
+  I --> R[Search]
+  R --> T[Citations]
 ```
 
 | Concern | How Atlas handles it |
@@ -71,15 +77,15 @@ Legend: ✅ shipped · 🗺️ planned
 
 ```mermaid
 flowchart LR
-  Client([Client]) --> API[Atlas API<br/>Fastify]
+  Client([Client]) --> API["Atlas API"]
   API --> PG[(Postgres)]
-  API --> MinIO[(MinIO / S3)]
-  API --> Redis[(Redis / BullMQ)]
-  Redis --> Worker[Atlas Worker]
+  API --> MinIO[(MinIO)]
+  API --> Redis[(Redis)]
+  Redis --> Worker["Atlas Worker"]
   Worker --> MinIO
   Worker --> PG
   Worker --> Qdrant[(Qdrant)]
-  Worker --> Ollama[Ollama<br/>embeddings]
+  Worker --> Ollama["Ollama"]
   API --> Qdrant
   API --> Ollama
 ```
