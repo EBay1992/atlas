@@ -2,7 +2,7 @@
   "name": "atlas",
   "version": "0.1.0",
   "private": true,
-  "description": "Atlas — enterprise knowledge platform",
+  "description": "Atlas — reference implementation of a production-grade enterprise AI platform",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20"

@@ -1,0 +1,10 @@
+{
+  "status": "ready",
+  "checks": {
+    "postgres": "ok",
+    "redis": "ok",
+    "minio": "ok",
+    "qdrant": "ok",
+    "ollama": "ok"
+  }
+}

@@ -17,9 +17,9 @@ import {
 } from "@atlas/domain";
 import {
   atlasSpanAttrs,
+  observe,
+  observeLinked,
   withExtractedContext,
-  withLinkedRootSpan,
-  withSpan,
   type AtlasMetrics,
   type Logger,
 } from "@atlas/observability";
@@ -63,7 +63,7 @@ async function embedInBatches(
   const vectors: number[][] = [];
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
-    const result = await withSpan(
+    const result = await observe(
       "embed.batch",
       async () => embeddings.embed(batch),
       { ...attrs, "atlas.batch_size": batch.length },
@@ -150,7 +150,7 @@ async function processIngestionJobInner(
     throw new Error(`Document not found: ${documentId}`);
   }
 
-  const body = await withSpan(
+  const body = await observe(
     "objectstore.get",
     async () => {
       const objectStream = await deps.objectStore.getObject(storageKey);
@@ -160,7 +160,7 @@ async function processIngestionJobInner(
   );
   log.info({ byteSize: body.byteLength }, "Object downloaded from object store");
 
-  const extracted = await withSpan(
+  const extracted = await observe(
     "extract.text",
     async () =>
       deps.textExtractor.extract({
@@ -175,7 +175,7 @@ async function processIngestionJobInner(
     "Text extracted",
   );
 
-  const textChunks = await withSpan(
+  const textChunks = await observe(
     "chunk",
     async () =>
       chunkText(extracted.text, {
@@ -213,7 +213,7 @@ async function processIngestionJobInner(
     });
 
     await deps.chunks.replaceForDocument(tenantId, documentId, createInputs);
-    await withSpan(
+    await observe(
       "qdrant.upsert",
       async () => {
         await deps.vectorStore.upsert(
@@ -299,7 +299,7 @@ export async function processIngestionJob(
 
   // Manual/DLQ retry: new Trace ID linked to the original upload.
   if (retryKind === "manual") {
-    return withLinkedRootSpan(
+    return observeLinked(
       "ingestion.process",
       {
         ...(linkedTraceparent ? { traceparent: linkedTraceparent } : {}),
@@ -316,7 +316,7 @@ export async function processIngestionJob(
       ...(traceparent ? { traceparent } : {}),
       ...(tracestate ? { tracestate } : {}),
     },
-    () => withSpan("ingestion.process", run, attrs),
+    () => observe("ingestion.process", run, attrs),
   );
 }
 

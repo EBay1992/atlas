@@ -32,6 +32,13 @@ export class BullMqJobQueue implements JobQueue {
   }
 
   async enqueueIngestion(payload: IngestionJobPayload): Promise<EnqueueResult> {
+    // Manual retries (and recovery after force-fail) reuse the domain job id.
+    // BullMQ rejects a second add() while a completed/failed job with that id remains.
+    const existing = await this.queue.getJob(payload.jobId);
+    if (existing) {
+      await existing.remove();
+    }
+
     const job = await this.queue.add("process-document", payload, {
       jobId: payload.jobId,
     });

@@ -1,8 +1,14 @@
-# Architecture Decision Records
+# ADR 0001: Record architecture decisions
 
-This folder records significant architectural decisions for Atlas.
+- **Status:** accepted
 
-Each ADR uses:
+## Context
+
+Atlas is positioned as a **reference implementation of an enterprise AI platform**. Readers (including Staff-level interviewers) need durable explanations of trade-offs, not tribal knowledge in chat logs.
+
+## Decision
+
+Maintain Architecture Decision Records in `docs/adr/` using:
 
 - **Status:** proposed | accepted | superseded | deprecated
 - **Context:** forces at play
@@ -11,4 +17,17 @@ Each ADR uses:
 - **Consequences:** trade-offs and follow-ups
 - **Revisit when:** conditions that would reopen the decision
 
-ADRs are interview assets: they show reasoned trade-offs, not tutorial defaults.
+Index and topic map: [README.md](./README.md).
+
+## Alternatives
+
+- Wiki-only docs: drift from the repo  
+- Code comments alone: invisible in review of system shape  
+
+## Consequences
+
+ADRs are interview and onboarding assets: they show reasoned trade-offs, not tutorial defaults.
+
+## Revisit when
+
+The project outgrows markdown ADRs (e.g. RFCs with formal review boards).

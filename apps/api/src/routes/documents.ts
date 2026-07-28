@@ -4,7 +4,7 @@ import type { FastifyPluginAsync } from "fastify";
 import {
   atlasSpanAttrs,
   injectTraceContext,
-  withSpan,
+  observe,
 } from "@atlas/observability";
 
 function serializeDocument(doc: {
@@ -127,7 +127,7 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const auth = request.auth!;
-      return withSpan(
+      return observe(
         "documents.upload",
         async () => {
       const idempotencyKeyHeader = request.headers["idempotency-key"];
@@ -175,7 +175,7 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
       // Dual-write order: object store → DB metadata → queue.
       // Orphaned objects possible if DB fails after MinIO write (compensating delete).
       try {
-        await withSpan(
+        await observe(
           "objectstore.put",
           async () => {
             await app.deps.objectStore.putObject({
@@ -265,7 +265,7 @@ const documentsRoutes: FastifyPluginAsync = async (app) => {
       );
 
       try {
-        await withSpan(
+        await observe(
           "jobs.enqueue",
           async () => {
             const carrier = injectTraceContext({});

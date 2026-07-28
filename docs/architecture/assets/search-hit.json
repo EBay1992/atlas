@@ -1,0 +1,44 @@
+{
+  "results": [
+    {
+      "score": 0.6140075,
+      "documentId": "50241765-f722-49c2-856a-a40d3c9fa835",
+      "chunkId": "0ddcde0a-af97-4383-9b68-c1bb326bdb47",
+      "ordinal": 1,
+      "text": "in spring teach visitors how to join a scion ofan antique variety onto a hardy rootstock so the tree survives clay soil andbitter winters.\n\nNothing in this document concerns phones, laptops, app stores, Cupertino campuses,\nor quarterly earnings. When we say apple, we mean the edible fruit hanging froma living tree\u2014picked, pressed, fermented, and shared at harvest tables underyellow leaves.",
+      "filename": "01-apple-orchard-cider.txt"
+    },
+    {
+      "score": 0.6140075,
+      "documentId": "4c86a637-a7e8-45a1-8f15-c0a43f9920fe",
+      "chunkId": "37b43bd3-7a3a-4afe-84d0-197639c7ff98",
+      "ordinal": 1,
+      "text": "in spring teach visitors how to join a scion ofan antique variety onto a hardy rootstock so the tree survives clay soil andbitter winters.\n\nNothing in this document concerns phones, laptops, app stores, Cupertino campuses,\nor quarterly earnings. When we say apple, we mean the edible fruit hanging froma living tree\u2014picked, pressed, fermented, and shared at harvest tables underyellow leaves.",
+      "filename": "01-apple-orchard-cider.txt"
+    },
+    {
+      "score": 0.5783272,
+      "documentId": "4c86a637-a7e8-45a1-8f15-c0a43f9920fe",
+      "chunkId": "fd78c8aa-dba7-495f-aefc-de6174f5e0df",
+      "ordinal": 0,
+      "text": "# Cold-Pressed Cider and the Heirloom Orchard\n\nIn late September the hillside orchard turns sharp with the smell of fallen fruit.\nCrews walk the rows at dawn, shaking limbs so ripe apples drop into padded tarpsrather than bruising on hard ground. The best cider stock is never the glossysupermarket specimen; it is a tart heirloom with thick skin, high tannin, and acore that resists soft rot after nights of frost.\n\nThe farm presses within forty-eight hours of picking. Juice is racked intostainless tanks, allowed a quiet primary ferment, then rested on fine lees untilthe finished cider tastes of orchard floor, pear skin, and wild yeast rather thansugar water. Grafting workshops in spring teach visitors how to join a scion ofan antique variety onto a hardy rootstock so the tree survives clay",
+      "filename": "01-apple-orchard-cider.txt"
+    },
+    {
+      "score": 0.5783272,
+      "documentId": "50241765-f722-49c2-856a-a40d3c9fa835",
+      "chunkId": "8f2dcca6-f3dd-4bee-bc4e-1cd9b39b8158",
+      "ordinal": 0,
+      "text": "# Cold-Pressed Cider and the Heirloom Orchard\n\nIn late September the hillside orchard turns sharp with the smell of fallen fruit.\nCrews walk the rows at dawn, shaking limbs so ripe apples drop into padded tarpsrather than bruising on hard ground. The best cider stock is never the glossysupermarket specimen; it is a tart heirloom with thick skin, high tannin, and acore that resists soft rot after nights of frost.\n\nThe farm presses within forty-eight hours of picking. Juice is racked intostainless tanks, allowed a quiet primary ferment, then rested on fine lees untilthe finished cider tastes of orchard floor, pear skin, and wild yeast rather thansugar water. Grafting workshops in spring teach visitors how to join a scion ofan antique variety onto a hardy rootstock so the tree survives clay",
+      "filename": "01-apple-orchard-cider.txt"
+    },
+    {
+      "score": 0.4596238,
+      "documentId": "0062079f-97ad-42e6-8a85-0b5754f60310",
+      "chunkId": "a70fa49d-2980-4ea9-b09c-2372a3ce63ec",
+      "ordinal": 0,
+      "text": "atlas smoke document for search",
+      "filename": "smoke.txt"
+    }
+  ]
+}

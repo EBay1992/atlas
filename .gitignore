@@ -18,3 +18,4 @@ apphost/.aspire/
 apphost/.modules/
 
 .tmp-smoke/
+.tmp/

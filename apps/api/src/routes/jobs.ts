@@ -6,7 +6,7 @@ import {
 import {
   atlasSpanAttrs,
   injectTraceContext,
-  withSpan,
+  observe,
 } from "@atlas/observability";
 import { serializeJob } from "./documents.js";
 
@@ -86,7 +86,7 @@ const jobsRoutes: FastifyPluginAsync = async (app) => {
       const auth = request.auth!;
       const { id } = request.params as { id: string };
 
-      return withSpan(
+      return observe(
         "jobs.retry",
         async () => {
           const job = await app.deps.jobs.findById(auth.tenantId, id);
